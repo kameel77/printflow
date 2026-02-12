@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 
 interface CalculationResult {
@@ -11,6 +11,11 @@ interface CalculationResult {
   is_split: boolean
   num_panels: number
   overlap_used_cm: number
+  client_view: Array<{
+    desc: string
+    qty: number
+    total: number
+  }>
   tech_view: Array<{
     name: string
     type: string
@@ -21,191 +26,387 @@ interface CalculationResult {
   }>
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+interface Template {
+  id: number
+  name: string
+  description: string
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
 
 export default function Calculator() {
-  const [width, setWidth] = useState<string>('100')
-  const [height, setHeight] = useState<string>('100')
+  // Input parameters
+  const [width, setWidth] = useState<string>('200')
+  const [height, setHeight] = useState<string>('120')
   const [quantity, setQuantity] = useState<string>('1')
   const [templateId, setTemplateId] = useState<string>('1')
+  const [overlapOverride, setOverlapOverride] = useState<string>('')
+  
+  // State
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CalculationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [autoCalculate, setAutoCalculate] = useState(true)
 
-  const handleCalculate = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Fetch templates on mount
+  useEffect(() => {
+    fetchTemplates()
+  }, [])
+
+  // Auto-calculate when parameters change
+  useEffect(() => {
+    if (autoCalculate && width && height && quantity) {
+      const timeoutId = setTimeout(() => {
+        handleCalculate()
+      }, 500)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [width, height, quantity, templateId, overlapOverride, autoCalculate])
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/calculate/templates`)
+      setTemplates(response.data.templates)
+    } catch (err) {
+      console.error('Failed to fetch templates:', err)
+      // Fallback templates
+      setTemplates([
+        { id: 1, name: 'Fototapeta Lateksowa', description: 'Standardowa fototapeta' },
+        { id: 2, name: 'Tablica Magnetyczna', description: 'Tablica z folią magnetyczną' }
+      ])
+    }
+  }
+
+  const handleCalculate = useCallback(async () => {
+    if (!width || !height || !quantity) return
+    
     setLoading(true)
     setError(null)
 
     try {
-      const response = await axios.post(`${API_URL}/calculate`, {
+      const payload: any = {
         width_cm: parseFloat(width),
         height_cm: parseFloat(height),
         quantity: parseInt(quantity),
         template_id: parseInt(templateId),
         selected_options: [],
-      })
+      }
 
+      if (overlapOverride) {
+        payload.overlap_override_cm = parseFloat(overlapOverride)
+      }
+
+      const response = await axios.post(`${API_URL}/calculate`, payload)
       setResult(response.data)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Wystąpił błąd podczas kalkulacji')
     } finally {
       setLoading(false)
     }
+  }, [width, height, quantity, templateId, overlapOverride])
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pl-PL', {
+      style: 'currency',
+      currency: 'PLN',
+      minimumFractionDigits: 2
+    }).format(value)
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Input Form */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Kalkulator Wycen</h2>
-        
-        <form onSubmit={handleCalculate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Szerokość (cm)
+              <h1 className="text-2xl font-bold text-gray-900">Kalkulator Wycen</h1>
+              <p className="text-sm text-gray-500 mt-1">PrintFlow MIS - System wycen dla drukarni</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={autoCalculate}
+                  onChange={(e) => setAutoCalculate(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Auto-kalkulacja
               </label>
-              <input
-                type="number"
-                value={width}
-                onChange={(e) => setWidth(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-                step="0.1"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wysokość (cm)
-              </label>
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-                step="0.1"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ilość
-            </label>
-            <input
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="1"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Szablon produktu
-            </label>
-            <select
-              value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">Fototapeta Lateksowa</option>
-              <option value="2">Tablica Magnetyczna</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Obliczanie...' : 'Oblicz wycenę'}
-          </button>
-        </form>
-
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
-      </div>
-
-      {/* Results */}
-      {result && (
-        <div className="space-y-6">
-          {/* Price Summary */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Podsumowanie</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600">Cena netto</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {result.total_price_net.toFixed(2)} PLN
-                </p>
-              </div>
-              
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-600">Marża</p>
-                <p className="text-2xl font-bold text-green-900">
-                  {result.margin_percentage.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <div className="p-2 bg-gray-50 rounded">
-                <span className="text-gray-600">Wymiar brutto:</span>
-                <p className="font-medium">{result.gross_dimensions.width.toFixed(1)} x {result.gross_dimensions.height.toFixed(1)} cm</p>
-              </div>
-              <div className="p-2 bg-gray-50 rounded">
-                <span className="text-gray-600">Bryty:</span>
-                <p className="font-medium">{result.num_panels} {result.is_split ? '(dzielone)' : '(jeden kawałek)'}</p>
-              </div>
-              <div className="p-2 bg-gray-50 rounded">
-                <span className="text-gray-600">Zakładka:</span>
-                <p className="font-medium">{result.overlap_used_cm} cm</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Tech View */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Widok techniczny (produkcja)</h3>
-            
-            <div className="space-y-2">
-              {result.tech_view.map((component, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className={`inline-block px-2 py-1 text-xs rounded ${
-                        component.type === 'MATERIAL' 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
-                      </span>
-                      <p className="font-medium mt-1">{component.name}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">{component.price_net.toFixed(2)} PLN</p>
-                      <p className="text-sm text-gray-600">{component.qty.toFixed(3)} {component.unit}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">{component.details}</p>
-                </div>
-              ))}
+              <button
+                onClick={handleCalculate}
+                disabled={loading}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {loading ? 'Obliczanie...' : 'Przelicz'}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Left Panel - Inputs */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Dimensions Card */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                Wymiary produktu
+              </h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Szerokość (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={width}
+                    onChange={(e) => setWidth(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    min="1"
+                    step="0.1"
+                    placeholder="np. 200"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Wysokość (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    min="1"
+                    step="0.1"
+                    placeholder="np. 120"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ilość sztuk
+                </label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  min="1"
+                  placeholder="1"
+                />
+              </div>
+            </div>
+
+            {/* Template Card */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Szablon produktu
+              </h2>
+              
+              <select
+                value={templateId}
+                onChange={(e) => setTemplateId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+              >
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+
+              {templates.find(t => t.id === parseInt(templateId))?.description && (
+                <p className="mt-2 text-sm text-gray-500">
+                  {templates.find(t => t.id === parseInt(templateId))?.description}
+                </p>
+              )}
+            </div>
+
+            {/* Advanced Options */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                Opcje zaawansowane
+              </h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nadpisanie zakładki (cm)
+                </label>
+                <input
+                  type="number"
+                  value={overlapOverride}
+                  onChange={(e) => setOverlapOverride(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  min="0"
+                  step="0.1"
+                  placeholder="Domyślnie z szablonu"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Pozostaw puste, aby użyć wartości domyślnej z szablonu
+                </p>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">{error}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Panel - Results */}
+          <div className="lg:col-span-8 space-y-6">
+            {result ? (
+              <>
+                {/* Price Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+                    <p className="text-blue-100 text-sm font-medium mb-1">Cena netto</p>
+                    <p className="text-3xl font-bold">{formatCurrency(result.total_price_net)}</p>
+                    <p className="text-blue-100 text-xs mt-2">
+                      za {result.client_view[0]?.qty || quantity} szt.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+                    <p className="text-green-100 text-sm font-medium mb-1">Marża</p>
+                    <p className="text-3xl font-bold">{result.margin_percentage.toFixed(1)}%</p>
+                    <p className="text-green-100 text-xs mt-2">
+                      {formatCurrency(result.total_price_net - result.total_cost_cogs)} zysk
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                    <p className="text-purple-100 text-sm font-medium mb-1">Koszt wytworzenia</p>
+                    <p className="text-3xl font-bold">{formatCurrency(result.total_cost_cogs)}</p>
+                    <p className="text-purple-100 text-xs mt-2">
+                      COGS (koszt materiałów i procesów)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Production Details */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Szczegóły produkcyjne
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar netto</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {width} × {height} cm
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar brutto</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {result.gross_dimensions.width.toFixed(1)} × {result.gross_dimensions.height.toFixed(1)} cm
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Bryty</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {result.num_panels} {result.is_split ? '(dzielone)' : '(jeden kawałek)'}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Zakładka</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {result.overlap_used_cm} cm
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Components */}
+                <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                  <div className="px-6 py-4 border-b bg-gray-50">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Składniki wyceny (widok techniczny)
+                    </h3>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-100">
+                    {result.tech_view.map((component, index) => (
+                      <div key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                component.type === 'MATERIAL' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
+                              </span>
+                              <h4 className="font-medium text-gray-900">{component.name}</h4>
+                            </div>
+                            <p className="text-sm text-gray-500">{component.details}</p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-semibold text-gray-900">{formatCurrency(component.price_net)}</p>
+                            <p className="text-sm text-gray-500">{component.qty.toFixed(3)} {component.unit}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="px-6 py-4 bg-gray-50 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-700">Suma:</span>
+                      <span className="text-xl font-bold text-gray-900">{formatCurrency(result.total_price_net)}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Wprowadź parametry</h3>
+                <p className="text-gray-500">Podaj wymiary i wybierz szablon, aby zobaczyć kalkulację</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
