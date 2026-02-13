@@ -59,6 +59,7 @@ class MaterialUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
+    variants: Optional[List[MaterialVariantCreate]] = None
 
 
 class MaterialResponse(MaterialBase):

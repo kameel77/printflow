@@ -76,7 +76,7 @@ async def update_material(
     material_update: MaterialUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Update material"""
+    """Update material with optional variant replacement"""
     result = await db.execute(
         select(Material)
         .options(selectinload(Material.variants))
@@ -87,8 +87,20 @@ async def update_material(
         raise HTTPException(status_code=404, detail="Material not found")
 
     update_data = material_update.model_dump(exclude_unset=True)
+    variants_data = update_data.pop("variants", None)
+
     for key, value in update_data.items():
         setattr(material, key, value)
+
+    # Replace variants if provided
+    if variants_data is not None:
+        # Delete existing variants
+        for old_variant in list(material.variants):
+            await db.delete(old_variant)
+        # Add new variants
+        material.variants = [
+            MaterialVariant(**v) for v in variants_data
+        ]
 
     await db.flush()
     await db.refresh(material, ["variants"])
