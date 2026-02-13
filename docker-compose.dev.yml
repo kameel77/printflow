@@ -62,6 +62,14 @@ services:
     networks:
       - printflow
       - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.backend-printflow-custom.rule=Host(`${SERVICE_FQDN_BACKEND}`)"
+      - "traefik.http.routers.backend-printflow-custom.entrypoints=websecure"
+      - "traefik.http.routers.backend-printflow-custom.tls=true"
+      - "traefik.http.routers.backend-printflow-custom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend-printflow-custom.loadbalancer.server.port=8000"
     command: >
       sh -c "
         echo 'Wait 3s for DB/DNS...' && sleep 3 &&
@@ -88,11 +96,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
-      - "traefik.http.routers.frontend-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
-      - "traefik.http.routers.frontend-custom.entrypoints=websecure"
-      - "traefik.http.routers.frontend-custom.tls=true"
-      - "traefik.http.routers.frontend-custom.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend-printflow-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      - "traefik.http.routers.frontend-printflow-custom.entrypoints=websecure"
+      - "traefik.http.routers.frontend-printflow-custom.tls=true"
+      - "traefik.http.routers.frontend-printflow-custom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend-printflow-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
         condition: service_started
