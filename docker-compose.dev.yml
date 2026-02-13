@@ -86,9 +86,8 @@ services:
       - "3000"
     labels:
       - "traefik.enable=true"
-      # Match ANY host that reaches this container (wildcard for catch-all in isolated stack)
+      - "traefik.docker.network=coolify"
       - "traefik.http.routers.frontend-custom.rule=HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.frontend-custom.entrypoints=http"
       - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
