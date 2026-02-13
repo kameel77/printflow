@@ -47,7 +47,7 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       DEBUG: ${DEBUG:-true}
       ENVIRONMENT: ${ENVIRONMENT:-development}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      CORS_ORIGINS: "*"
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,7 +86,8 @@ services:
       - "3000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      # Match ANY host that reaches this container (wildcard for catch-all in isolated stack)
+      - "traefik.http.routers.frontend-custom.rule=HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.frontend-custom.entrypoints=http"
       - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
     depends_on:
@@ -100,6 +101,7 @@ services:
       start_period: 40s
     networks:
       - printflow
+      - coolify
 
 volumes:
   postgres_data:
@@ -110,3 +112,5 @@ volumes:
 networks:
   printflow:
     driver: bridge
+  coolify:
+    external: true
