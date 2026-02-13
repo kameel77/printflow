@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 
@@ -48,7 +50,7 @@ export default function Calculator() {
   const [templateId, setTemplateId] = useState<string>('1')
   const [overlapOverride, setOverlapOverride] = useState<string>('')
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
-  
+
   // State
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CalculationResult | null>(null)
@@ -137,7 +139,7 @@ export default function Calculator() {
 
   const handleCalculate = useCallback(async () => {
     if (!width || !height || !quantity) return
-    
+
     setLoading(true)
     setError(null)
 
@@ -181,11 +183,30 @@ export default function Calculator() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kalkulator Wycen</h1>
-              <p className="text-sm text-gray-500 mt-1">PrintFlow MIS - System wycen Satto Media</p>
+            <div className="flex items-center gap-4">
+              <Image
+                src="/icon.png"
+                alt="Wally"
+                width={48}
+                height={48}
+                className="rounded-lg"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Printflow MIS</h1>
+                <p className="text-sm text-gray-500 mt-1">System wycen Satto Media</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Setup produktów
+              </Link>
               <label className="flex items-center gap-2 text-sm text-gray-600">
                 <input
                   type="checkbox"
@@ -209,7 +230,7 @@ export default function Calculator() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Left Panel - Inputs */}
           <div className="lg:col-span-4 space-y-6">
             {/* Dimensions Card */}
@@ -220,7 +241,7 @@ export default function Calculator() {
                 </svg>
                 Wymiary produktu
               </h2>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -236,7 +257,7 @@ export default function Calculator() {
                     placeholder="np. 200"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Wysokość (cm)
@@ -276,7 +297,7 @@ export default function Calculator() {
                 </svg>
                 Szablon produktu
               </h2>
-              
+
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
@@ -347,7 +368,7 @@ export default function Calculator() {
                 </svg>
                 Opcje zaawansowane
               </h2>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nadpisanie zakładki (cm)
@@ -393,7 +414,7 @@ export default function Calculator() {
                       za {result.client_view[0]?.qty || quantity} szt.
                     </p>
                   </div>
-                  
+
                   <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
                     <p className="text-green-100 text-sm font-medium mb-1">Marża</p>
                     <p className="text-3xl font-bold">{result.margin_percentage.toFixed(1)}%</p>
@@ -419,7 +440,7 @@ export default function Calculator() {
                     </svg>
                     Szczegóły produkcyjne
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar netto</p>
@@ -427,21 +448,21 @@ export default function Calculator() {
                         {width} × {height} cm
                       </p>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar brutto</p>
                       <p className="text-lg font-semibold text-gray-900">
                         {result.gross_dimensions.width.toFixed(1)} × {result.gross_dimensions.height.toFixed(1)} cm
                       </p>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Bryty</p>
                       <p className="text-lg font-semibold text-gray-900">
                         {result.num_panels} {result.is_split ? '(dzielone)' : '(jeden kawałek)'}
                       </p>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Zakładka</p>
                       <p className="text-lg font-semibold text-gray-900">
@@ -462,18 +483,17 @@ export default function Calculator() {
                       Składniki wyceny (widok techniczny)
                     </h3>
                   </div>
-                  
+
                   <div className="divide-y divide-gray-100">
                     {result.tech_view.map((component, index) => (
                       <div key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                component.type === 'MATERIAL' 
-                                  ? 'bg-purple-100 text-purple-800' 
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${component.type === 'MATERIAL'
+                                  ? 'bg-purple-100 text-purple-800'
                                   : 'bg-orange-100 text-orange-800'
-                              }`}>
+                                }`}>
                                 {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
                               </span>
                               <h4 className="font-medium text-gray-900">{component.name}</h4>
@@ -488,7 +508,7 @@ export default function Calculator() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="px-6 py-4 bg-gray-50 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-gray-700">Suma:</span>

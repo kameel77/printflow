@@ -55,6 +55,12 @@ class MaterialCreate(MaterialBase):
     variants: List[MaterialVariantCreate] = []
 
 
+class MaterialUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+
 class MaterialResponse(MaterialBase):
     id: int
     variants: List[MaterialVariantResponse] = []
@@ -79,6 +85,18 @@ class ProcessBase(BaseModel):
 
 class ProcessCreate(ProcessBase):
     pass
+
+
+class ProcessUpdate(BaseModel):
+    name: Optional[str] = None
+    method: Optional[CalculationMethod] = None
+    unit_price: Optional[Decimal] = None
+    setup_fee: Optional[Decimal] = None
+    internal_cost: Optional[Decimal] = None
+    margin_w_cm: Optional[Decimal] = None
+    margin_h_cm: Optional[Decimal] = None
+    unit: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class ProcessResponse(ProcessBase):
@@ -122,6 +140,16 @@ class ProductTemplateBase(BaseModel):
 
 class ProductTemplateCreate(ProductTemplateBase):
     components: List[TemplateComponentCreate] = []
+
+
+class ProductTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    default_margin_w_cm: Optional[Decimal] = None
+    default_margin_h_cm: Optional[Decimal] = None
+    default_overlap_cm: Optional[Decimal] = None
+    is_active: Optional[bool] = None
+    components: Optional[List[TemplateComponentCreate]] = None
 
 
 class ProductTemplateResponse(ProductTemplateBase):
