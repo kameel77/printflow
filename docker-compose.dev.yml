@@ -61,6 +61,7 @@ services:
       start_period: 120s
     networks:
       - printflow
+      - coolify
     command: >
       sh -c "
         echo 'Wait 3s for DB/DNS...' && sleep 3 &&
@@ -87,11 +88,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
-      - "traefik.http.routers.frontend-custom.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.frontend-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
       - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
         condition: service_started
+    # Disable inherited healthcheck to prevent 503 errors
+    healthcheck:
+      test: [ "NONE" ]
     networks:
       - printflow
       - coolify
