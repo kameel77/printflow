@@ -300,10 +300,11 @@ export default function Calculator() {
                     <div className="space-y-1">
                       {requiredComponents.map((comp) => (
                         <div key={comp.id} className="flex items-center gap-2 text-sm text-gray-700">
-                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-xs text-gray-400">[{comp.type}]</span>
+                          <span className="text-xs text-gray-400">{comp.type === 'MATERIAL' ? 'Materiał' : 'Proces'}</span>
+                          <span className="text-gray-400">•</span>
                           {comp.name}
                         </div>
                       ))}
@@ -325,9 +326,9 @@ export default function Calculator() {
                               onChange={() => handleOptionToggle(comp.id)}
                               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             />
-                            <div className="flex-1">
+                            <div className="flex-1 flex items-center gap-2">
                               <span className="text-sm text-gray-700">{comp.name}</span>
-                              <span className="text-xs text-gray-400 ml-2">[{comp.type}]</span>
+                              <span className="text-xs text-gray-400">{comp.type === 'MATERIAL' ? 'Materiał' : 'Proces'}</span>
                             </div>
                           </label>
                         ))}
