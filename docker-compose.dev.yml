@@ -38,7 +38,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
