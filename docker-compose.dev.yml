@@ -89,6 +89,9 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
       - "traefik.http.routers.frontend-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      - "traefik.http.routers.frontend-custom.entrypoints=websecure"
+      - "traefik.http.routers.frontend-custom.tls=true"
+      - "traefik.http.routers.frontend-custom.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
