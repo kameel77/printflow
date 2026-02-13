@@ -41,10 +41,8 @@ services:
       dockerfile: Dockerfile.dev
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:changeme@postgres:5432/printflow}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-min-32-characters-long}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       DEBUG: ${DEBUG:-true}
@@ -66,10 +64,11 @@ services:
     command: >
       sh -c "
         echo '=== PrintFlow Backend Starting ===' &&
-        echo \"DATABASE_URL=$$DATABASE_URL\" &&
-        python -m app.seed &&
+        echo \"DB = $$DATABASE_URL\" &&
+        python -c 'import asyncpg; print(\"asyncpg OK\")' &&
+        python -m app.seed || echo 'WARN: seed failed, continuing...' &&
         echo '=== Starting uvicorn ===' &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
       "
 
   # ─── Frontend (Next.js) ──────────────────────────────
@@ -88,7 +87,7 @@ services:
       - "3000:3000"
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000" ]
       interval: 30s
