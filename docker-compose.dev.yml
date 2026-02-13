@@ -57,15 +57,18 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 120s
     networks:
       - printflow
     command: >
       sh -c "
+        echo '=== PrintFlow Backend Starting ===' &&
+        echo \"DATABASE_URL=$$DATABASE_URL\" &&
         python -m app.seed &&
+        echo '=== Starting uvicorn ===' &&
         uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
       "
 
