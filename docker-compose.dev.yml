@@ -64,7 +64,8 @@ services:
     command: >
       sh -c "
         echo '=== PrintFlow Backend Starting ===' &&
-        echo \"DB = $$DATABASE_URL\" &&
+        echo \"DB_URL masked: $${DATABASE_URL/://*:*@}\" &&
+        python -c \"import os, socket, urllib.parse; url = urllib.parse.urlparse(os.environ.get('DATABASE_URL')); host = url.hostname; print(f'DEBUG: Connecting to host: {host}'); print(f'DEBUG: Resolved IP: {socket.gethostbyname(host)}' if host else 'DEBUG: No host found')\" || echo 'DEBUG: DNS lookup failed' &&
         python -c 'import asyncpg; print(\"asyncpg OK\")' &&
         python -m app.seed || echo 'WARN: seed failed, continuing...' &&
         echo '=== Starting uvicorn ===' &&
