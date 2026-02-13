@@ -13,6 +13,8 @@ if database_url.startswith("sqlite:///"):
     database_url = database_url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
 elif database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif database_url.startswith("postgres://"):  # Fix for platforms using postgres://
+    database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
 engine = create_async_engine(
     database_url,
