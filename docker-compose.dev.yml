@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-printflow}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v3:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
       interval: 10s
@@ -112,7 +112,7 @@ services:
       - coolify
 
 volumes:
-  postgres_data:
+  postgres_data_v3:
     driver: local
   redis_data:
     driver: local
