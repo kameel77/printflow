@@ -84,6 +84,11 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     expose:
       - "3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      - "traefik.http.routers.frontend-custom.entrypoints=http"
+      - "traefik.http.services.frontend-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
         condition: service_started
