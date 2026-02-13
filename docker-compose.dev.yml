@@ -8,10 +8,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-printflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printflow123}
       POSTGRES_DB: ${POSTGRES_DB:-printflow}
     volumes:
-      - postgres_data_v3:/var/lib/postgresql/data
+      - postgres_data_fresh:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
       interval: 10s
@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile.dev
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:changeme@postgres:5432/printflow}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-min-32-characters-long}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
@@ -112,7 +112,7 @@ services:
       - coolify
 
 volumes:
-  postgres_data_v3:
+  postgres_data_fresh:
     driver: local
   redis_data:
     driver: local
