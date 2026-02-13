@@ -30,6 +30,12 @@ interface Template {
   id: number
   name: string
   description: string
+  components?: Array<{
+    id: number
+    name: string
+    is_required: boolean
+    type: 'MATERIAL' | 'PROCESS'
+  }>
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
@@ -41,18 +47,28 @@ export default function Calculator() {
   const [quantity, setQuantity] = useState<string>('1')
   const [templateId, setTemplateId] = useState<string>('1')
   const [overlapOverride, setOverlapOverride] = useState<string>('')
+  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   
   // State
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CalculationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
+  const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null)
   const [autoCalculate, setAutoCalculate] = useState(true)
 
   // Fetch templates on mount
   useEffect(() => {
     fetchTemplates()
   }, [])
+
+  // Fetch template details when templateId changes
+  useEffect(() => {
+    if (templateId) {
+      fetchTemplateDetails(parseInt(templateId))
+      setSelectedOptions([]) // Reset options when template changes
+    }
+  }, [templateId])
 
   // Auto-calculate when parameters change
   useEffect(() => {
@@ -62,7 +78,7 @@ export default function Calculator() {
       }, 500)
       return () => clearTimeout(timeoutId)
     }
-  }, [width, height, quantity, templateId, overlapOverride, autoCalculate])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate])
 
   const fetchTemplates = async () => {
     try {
@@ -78,6 +94,47 @@ export default function Calculator() {
     }
   }
 
+  const fetchTemplateDetails = async (id: number) => {
+    try {
+      const response = await axios.get(`${API_URL}/calculate/templates/${id}`)
+      setCurrentTemplate(response.data)
+    } catch (err) {
+      console.error('Failed to fetch template details:', err)
+      // Fallback - use mock data based on template ID
+      if (id === 1) {
+        setCurrentTemplate({
+          id: 1,
+          name: 'Fototapeta Lateksowa',
+          description: 'Standardowa fototapeta',
+          components: [
+            { id: 1, name: 'Papier Lateksowy', is_required: true, type: 'MATERIAL' },
+            { id: 2, name: 'Cięcie CNC', is_required: true, type: 'PROCESS' }
+          ]
+        })
+      } else if (id === 2) {
+        setCurrentTemplate({
+          id: 2,
+          name: 'Tablica Magnetyczna',
+          description: 'Tablica z folią magnetyczną',
+          components: [
+            { id: 3, name: 'Folia Magnetyczna', is_required: true, type: 'MATERIAL' },
+            { id: 4, name: 'Laminowanie', is_required: false, type: 'PROCESS' },
+            { id: 5, name: 'Cięcie CNC', is_required: true, type: 'PROCESS' }
+          ]
+        })
+      }
+    }
+  }
+
+  const handleOptionToggle = (optionId: number) => {
+    setSelectedOptions(prev => {
+      if (prev.includes(optionId)) {
+        return prev.filter(id => id !== optionId)
+      }
+      return [...prev, optionId]
+    })
+  }
+
   const handleCalculate = useCallback(async () => {
     if (!width || !height || !quantity) return
     
@@ -90,7 +147,7 @@ export default function Calculator() {
         height_cm: parseFloat(height),
         quantity: parseInt(quantity),
         template_id: parseInt(templateId),
-        selected_options: [],
+        selected_options: selectedOptions,
       }
 
       if (overlapOverride) {
@@ -104,7 +161,7 @@ export default function Calculator() {
     } finally {
       setLoading(false)
     }
-  }, [width, height, quantity, templateId, overlapOverride])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pl-PL', {
@@ -114,6 +171,10 @@ export default function Calculator() {
     }).format(value)
   }
 
+  // Get required and optional components
+  const requiredComponents = currentTemplate?.components?.filter(c => c.is_required) || []
+  const optionalComponents = currentTemplate?.components?.filter(c => !c.is_required) || []
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -122,7 +183,7 @@ export default function Calculator() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Kalkulator Wycen</h1>
-              <p className="text-sm text-gray-500 mt-1">PrintFlow MIS - System wycen dla drukarni</p>
+              <p className="text-sm text-gray-500 mt-1">PrintFlow MIS - System wycen Satto Media</p>
             </div>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm text-gray-600">
@@ -228,10 +289,52 @@ export default function Calculator() {
                 ))}
               </select>
 
-              {templates.find(t => t.id === parseInt(templateId))?.description && (
-                <p className="mt-2 text-sm text-gray-500">
-                  {templates.find(t => t.id === parseInt(templateId))?.description}
-                </p>
+              {/* Template Components Summary */}
+              {currentTemplate && (
+                <div className="mt-4 space-y-3">
+                  {/* Required Components */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Elementy bazowe ({requiredComponents.length}):
+                    </p>
+                    <div className="space-y-1">
+                      {requiredComponents.map((comp) => (
+                        <div key={comp.id} className="flex items-center gap-2 text-sm text-gray-700">
+                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-xs text-gray-400">[{comp.type}]</span>
+                          {comp.name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Optional Components */}
+                  {optionalComponents.length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                        Opcje dodatkowe ({optionalComponents.length}):
+                      </p>
+                      <div className="space-y-2">
+                        {optionalComponents.map((comp) => (
+                          <label key={comp.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={selectedOptions.includes(comp.id)}
+                              onChange={() => handleOptionToggle(comp.id)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-gray-700">{comp.name}</span>
+                              <span className="text-xs text-gray-400 ml-2">[{comp.type}]</span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
