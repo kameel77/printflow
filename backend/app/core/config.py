@@ -1,9 +1,7 @@
 # Core configuration
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import List
-import os
 
 
 class Settings(BaseSettings):
@@ -25,15 +23,17 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     
-    # CORS — accepts comma-separated string from env, e.g. "https://app.example.com,http://localhost:3000"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # CORS — comma-separated string, e.g. "https://app.example.com,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip().strip('"').strip("'") for origin in v.split(",") if origin.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS_ORIGINS string into a list, stripping whitespace and quotes."""
+        return [
+            origin.strip().strip('"').strip("'")
+            for origin in self.CORS_ORIGINS.split(",")
+            if origin.strip()
+        ]
     
     # Application Settings
     FOLLOW_UP_DAYS: int = 3
