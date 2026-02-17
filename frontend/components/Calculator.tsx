@@ -44,8 +44,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1
 
 export default function Calculator() {
   // Input parameters
-  const [width, setWidth] = useState<string>('200')
-  const [height, setHeight] = useState<string>('120')
+  const [width, setWidth] = useState<string>('')
+  const [height, setHeight] = useState<string>('')
   const [quantity, setQuantity] = useState<string>('1')
   const [templateId, setTemplateId] = useState<string>('')
   const [overlapOverride, setOverlapOverride] = useState<string>('')
@@ -310,7 +310,7 @@ export default function Calculator() {
                 <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                Szablon produktu
+                Produkt
               </h2>
 
               <select
