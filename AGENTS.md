@@ -166,3 +166,45 @@ When using AI (Claude, Cursor, Copilot):
 3. Verify error handling paths
 4. Check for hardcoded values that should be env vars
 5. Run linter before committing AI-generated code
+
+## Key Documentation (MUST READ)
+
+> **Before making infrastructure, deployment, or database changes — read relevant docs first!**
+
+| Document | Path | What it covers |
+| -------- | ---- | -------------- |
+| **Deployment & Operations Guide** | `coolify_deployment_learnings.md` | Coolify/Traefik networking, database management, Alembic migrations, seed data, admin panel CRUD, troubleshooting, deployment workflows |
+| **This file (AGENTS.md)** | `AGENTS.md` | Project structure, tech stack, code style, commands |
+| **Environment template** | `.env.example` | All required environment variables |
+
+### When to consult `coolify_deployment_learnings.md`:
+- Adding/changing database schema → **Alembic migration workflow** (section 4)
+- Deployment issues (503, unhealthy, etc.) → **Troubleshooting** (section 10)
+- Resetting database or fixing seed issues → **Database** (section 3) + **Seed** (section 5)
+- Changing tooltips or admin panel data → **Panel Admin** (section 6)
+- Understanding startup sequence → **Startup** (section 8)
+- Frontend env var changes → **Frontend** (section 7) — remember `NEXT_PUBLIC_*` requires rebuild!
+
+### Database Schema Changes Workflow (Quick Reference)
+```bash
+# 1. Edit model: backend/app/models/models.py
+# 2. Generate migration:
+cd backend && alembic revision --autogenerate -m "description"
+# 3. Review generated file in alembic/versions/
+# 4. Test locally:
+alembic upgrade head
+# 5. Commit & push — deployment runs alembic upgrade head automatically
+```
+
+### File Locations Quick Reference
+```
+backend/app/models/models.py     → Database models (source of truth for schema)
+backend/alembic/versions/        → Migration files
+backend/app/seed.py              → Initial data seeder (idempotent)
+backend/app/core/config.py       → App settings (DATABASE_URL, JWT, CORS)
+backend/app/core/database.py     → SQLAlchemy engine & session
+frontend/app/admin/page.tsx      → Admin panel (CRUD for templates, materials, processes)
+frontend/components/Tooltip.tsx  → Tooltip component
+docker-compose.dev.yml           → Dev/Coolify deployment config
+```
+
