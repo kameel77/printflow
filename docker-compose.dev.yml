@@ -53,8 +53,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 15s
@@ -93,8 +93,6 @@ services:
       NODE_ENV: production
       BACKEND_URL: http://backend:8000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
-    ports:
-      - "3000:3000"
     expose:
       - "3000"
     labels:
