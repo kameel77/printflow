@@ -41,6 +41,9 @@ async def seed():
             margin_w_cm=Decimal("2.0"),
             margin_h_cm=Decimal("0.0"),
             unit="m2",
+            tooltip_markup_percentage="Narzut procentowy doliczany do ceny zakupowej materiału. 100% oznacza podwojenie ceny.",
+            tooltip_margin_w_cm="Dodatkowy margines technologiczny po szerokości — zapas na obcinanie krawędzi.",
+            tooltip_margin_h_cm="Dodatkowy margines technologiczny po wysokości.",
         ))
         papier.variants.append(MaterialVariant(
             width_cm=Decimal("137"),
@@ -49,6 +52,9 @@ async def seed():
             margin_w_cm=Decimal("2.0"),
             margin_h_cm=Decimal("0.0"),
             unit="m2",
+            tooltip_markup_percentage="Narzut procentowy doliczany do ceny zakupowej materiału. 100% oznacza podwojenie ceny.",
+            tooltip_margin_w_cm="Dodatkowy margines technologiczny po szerokości — zapas na obcinanie krawędzi.",
+            tooltip_margin_h_cm="Dodatkowy margines technologiczny po wysokości.",
         ))
 
         folia = Material(
@@ -63,6 +69,8 @@ async def seed():
             margin_w_cm=Decimal("1.0"),
             margin_h_cm=Decimal("0.0"),
             unit="m2",
+            tooltip_markup_percentage="Narzut procentowy doliczany do ceny zakupowej folii.",
+            tooltip_margin_w_cm="Zapas technologiczny na zawinięcie krawędzi folii.",
         ))
 
         session.add_all([papier, folia])
@@ -78,6 +86,12 @@ async def seed():
             margin_w_cm=Decimal("0.5"),
             margin_h_cm=Decimal("0.5"),
             unit="mb",
+            tooltip_method="LINEAR = obliczanie po obwodzie (mb). AREA = po powierzchni (m²). UNIT = za sztukę.",
+            tooltip_unit_price="Cena netto za jednostkę (mb, m², szt.) widoczna dla klienta.",
+            tooltip_setup_fee="Jednorazowa opłata za przygotowanie maszyny do cięcia.",
+            tooltip_internal_cost="Rzeczywisty koszt wewnętrzny — służy do kalkulacji marży.",
+            tooltip_margin_w_cm="Dodatkowy zapas na szer. potrzebny do prawidłowego cięcia.",
+            tooltip_margin_h_cm="Dodatkowy zapas na wys. potrzebny do prawidłowego cięcia.",
         )
         laminowanie = Process(
             name="Laminowanie",
@@ -88,6 +102,10 @@ async def seed():
             margin_w_cm=Decimal("0.0"),
             margin_h_cm=Decimal("0.0"),
             unit="m2",
+            tooltip_method="AREA = obliczanie po powierzchni (m²). Laminat nakładany jest na całą powierzchnię.",
+            tooltip_unit_price="Cena netto za m² laminacji.",
+            tooltip_setup_fee="Opłata za przygotowanie laminarki.",
+            tooltip_internal_cost="Rzeczywisty koszt folii do laminowania za m².",
         )
 
         session.add_all([ciecie, laminowanie])
@@ -100,6 +118,9 @@ async def seed():
             default_margin_w_cm=Decimal("0.5"),
             default_margin_h_cm=Decimal("0.5"),
             default_overlap_cm=Decimal("1.5"),
+            tooltip_margin_w_cm="Margines technologiczny po szerokości dodawany do każdego panelu fototapety.",
+            tooltip_margin_h_cm="Margines technologiczny po wysokości — zapas na wyrównanie górnej i dolnej krawędzi.",
+            tooltip_overlap_cm="Zakładka między sąsiednimi panelami. Zapobiega powstawaniu przerw po naklejeniu.",
         )
         fototapeta.components.append(TemplateComponent(
             material_id=papier.id,
@@ -118,6 +139,9 @@ async def seed():
             default_margin_w_cm=Decimal("1.0"),
             default_margin_h_cm=Decimal("1.0"),
             default_overlap_cm=Decimal("2.0"),
+            tooltip_margin_w_cm="Margines na zakładkę folii magnetycznej po bokach.",
+            tooltip_margin_h_cm="Margines na zakładkę folii magnetycznej góra/dół.",
+            tooltip_overlap_cm="Zakładka dla tablic wielopanelowych.",
         )
         tablica.components.append(TemplateComponent(
             material_id=folia.id,

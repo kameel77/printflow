@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
+import { Tooltip, LabelWithTooltip } from '../../components/Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
 
@@ -18,6 +19,9 @@ interface MaterialVariant {
     margin_w_cm: number
     margin_h_cm: number
     is_active: boolean
+    tooltip_margin_w_cm?: string | null
+    tooltip_margin_h_cm?: string | null
+    tooltip_markup_percentage?: string | null
 }
 
 interface Material {
@@ -40,6 +44,12 @@ interface ProcessItem {
     margin_h_cm: number
     unit: string | null
     is_active: boolean
+    tooltip_method?: string | null
+    tooltip_unit_price?: string | null
+    tooltip_setup_fee?: string | null
+    tooltip_internal_cost?: string | null
+    tooltip_margin_w_cm?: string | null
+    tooltip_margin_h_cm?: string | null
 }
 
 interface TemplateComponent {
@@ -62,6 +72,9 @@ interface Template {
     default_overlap_cm: number
     is_active: boolean
     components: TemplateComponent[]
+    tooltip_margin_w_cm?: string | null
+    tooltip_margin_h_cm?: string | null
+    tooltip_overlap_cm?: string | null
 }
 
 // ────────── Tab types ──────────
@@ -201,8 +214,8 @@ export default function AdminPage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-blue-600 text-white shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                         >
                             {tab.label}
@@ -280,8 +293,8 @@ export default function AdminPage() {
                                                                             <div key={i} className="flex items-center gap-2 text-sm">
                                                                                 <span
                                                                                     className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c.material_id
-                                                                                            ? 'bg-purple-100 text-purple-700'
-                                                                                            : 'bg-orange-100 text-orange-700'
+                                                                                        ? 'bg-purple-100 text-purple-700'
+                                                                                        : 'bg-orange-100 text-orange-700'
                                                                                         }`}
                                                                                 >
                                                                                     {type}
@@ -360,8 +373,30 @@ export default function AdminPage() {
                                                                         <tr>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Szer. (cm)</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Cena/jedn.</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Narzut %</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Margines W</th>
+                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">
+                                                                                <span className="inline-flex items-center gap-1">
+                                                                                    Narzut %
+                                                                                    {m.variants[0]?.tooltip_markup_percentage && (
+                                                                                        <Tooltip text={m.variants[0].tooltip_markup_percentage}>
+                                                                                            <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                                            </button>
+                                                                                        </Tooltip>
+                                                                                    )}
+                                                                                </span>
+                                                                            </th>
+                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">
+                                                                                <span className="inline-flex items-center gap-1">
+                                                                                    Margines W
+                                                                                    {m.variants[0]?.tooltip_margin_w_cm && (
+                                                                                        <Tooltip text={m.variants[0].tooltip_margin_w_cm}>
+                                                                                            <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                                            </button>
+                                                                                        </Tooltip>
+                                                                                    )}
+                                                                                </span>
+                                                                            </th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Jedn.</th>
                                                                         </tr>
                                                                     </thead>
@@ -416,11 +451,66 @@ export default function AdminPage() {
                                             <thead className="bg-gray-50">
                                                 <tr>
                                                     <th className="px-6 py-3 text-left font-medium text-gray-500">Nazwa</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Metoda</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Cena/jedn.</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Opłata startowa</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Koszt wewn.</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Margines</th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            Metoda
+                                                            {processes[0]?.tooltip_method && (
+                                                                <Tooltip text={processes[0].tooltip_method}>
+                                                                    <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    </button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </span>
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            Cena/jedn.
+                                                            {processes[0]?.tooltip_unit_price && (
+                                                                <Tooltip text={processes[0].tooltip_unit_price}>
+                                                                    <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    </button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </span>
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            Opłata startowa
+                                                            {processes[0]?.tooltip_setup_fee && (
+                                                                <Tooltip text={processes[0].tooltip_setup_fee}>
+                                                                    <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    </button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </span>
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            Koszt wewn.
+                                                            {processes[0]?.tooltip_internal_cost && (
+                                                                <Tooltip text={processes[0].tooltip_internal_cost}>
+                                                                    <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    </button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </span>
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            Margines
+                                                            {processes[0]?.tooltip_margin_w_cm && (
+                                                                <Tooltip text={processes[0].tooltip_margin_w_cm}>
+                                                                    <button type="button" className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help">
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                    </button>
+                                                                </Tooltip>
+                                                            )}
+                                                        </span>
+                                                    </th>
                                                     <th className="px-6 py-3 text-left font-medium text-gray-500">Status</th>
                                                     <th className="px-6 py-3 text-right font-medium text-gray-500">Akcje</th>
                                                 </tr>
@@ -602,8 +692,7 @@ function TemplateModal({
 
                     {/* Parameters */}
                     <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Margines W (cm)</label>
+                        <LabelWithTooltip label="Margines W (cm)" tooltipText={template?.tooltip_margin_w_cm}>
                             <input
                                 type="number"
                                 value={marginW}
@@ -612,9 +701,8 @@ function TemplateModal({
                                 min="0"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Margines H (cm)</label>
+                        </LabelWithTooltip>
+                        <LabelWithTooltip label="Margines H (cm)" tooltipText={template?.tooltip_margin_h_cm}>
                             <input
                                 type="number"
                                 value={marginH}
@@ -623,9 +711,8 @@ function TemplateModal({
                                 min="0"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Zakładka (cm)</label>
+                        </LabelWithTooltip>
+                        <LabelWithTooltip label="Zakładka (cm)" tooltipText={template?.tooltip_overlap_cm}>
                             <input
                                 type="number"
                                 value={overlap}
@@ -634,7 +721,7 @@ function TemplateModal({
                                 min="0"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
+                        </LabelWithTooltip>
                     </div>
 
                     <div className="flex items-center gap-2">
