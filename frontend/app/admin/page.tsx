@@ -89,9 +89,17 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    // Modal state
+    // Modal state — Templates
     const [showModal, setShowModal] = useState(false)
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
+
+    // Modal state — Materials
+    const [showMaterialModal, setShowMaterialModal] = useState(false)
+    const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
+
+    // Modal state — Processes
+    const [showProcessModal, setShowProcessModal] = useState(false)
+    const [editingProcess, setEditingProcess] = useState<ProcessItem | null>(null)
 
     const fetchAll = useCallback(async () => {
         setLoading(true)
@@ -164,6 +172,40 @@ export default function AdminPage() {
                 await axios.post(`${API_URL}/templates`, data)
             }
             setShowModal(false)
+            fetchAll()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu')
+        }
+    }
+
+    // ── Material CRUD ──
+    const openCreateMaterial = () => { setEditingMaterial(null); setShowMaterialModal(true) }
+    const openEditMaterial = (m: Material) => { setEditingMaterial(m); setShowMaterialModal(true) }
+    const handleSaveMaterial = async (data: any) => {
+        try {
+            if (editingMaterial) {
+                await axios.put(`${API_URL}/materials/${editingMaterial.id}`, data)
+            } else {
+                await axios.post(`${API_URL}/materials`, data)
+            }
+            setShowMaterialModal(false)
+            fetchAll()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu')
+        }
+    }
+
+    // ── Process CRUD ──
+    const openCreateProcess = () => { setEditingProcess(null); setShowProcessModal(true) }
+    const openEditProcess = (p: ProcessItem) => { setEditingProcess(p); setShowProcessModal(true) }
+    const handleSaveProcess = async (data: any) => {
+        try {
+            if (editingProcess) {
+                await axios.put(`${API_URL}/processes/${editingProcess.id}`, data)
+            } else {
+                await axios.post(`${API_URL}/processes`, data)
+            }
+            setShowProcessModal(false)
             fetchAll()
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd zapisu')
@@ -343,6 +385,15 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Materiały</h2>
+                                    <button
+                                        onClick={openCreateMaterial}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Dodaj materiał
+                                    </button>
                                 </div>
 
                                 {materials.length === 0 ? (
@@ -415,7 +466,16 @@ export default function AdminPage() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="ml-4">
+                                                    <div className="flex items-center gap-2 ml-4">
+                                                        <button
+                                                            onClick={() => openEditMaterial(m)}
+                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Edytuj"
+                                                        >
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                            </svg>
+                                                        </button>
                                                         <button
                                                             onClick={() => handleDeleteMaterial(m.id)}
                                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -439,6 +499,15 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Procesy</h2>
+                                    <button
+                                        onClick={openCreateProcess}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Dodaj proces
+                                    </button>
                                 </div>
 
                                 {processes.length === 0 ? (
@@ -537,15 +606,26 @@ export default function AdminPage() {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <button
-                                                                onClick={() => handleDeleteProcess(p.id)}
-                                                                className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
-                                                                title="Usuń"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
+                                                            <div className="inline-flex items-center gap-1">
+                                                                <button
+                                                                    onClick={() => openEditProcess(p)}
+                                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
+                                                                    title="Edytuj"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    </svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteProcess(p.id)}
+                                                                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
+                                                                    title="Usuń"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -567,6 +647,24 @@ export default function AdminPage() {
                     processes={processes}
                     onSave={handleSaveTemplate}
                     onClose={() => setShowModal(false)}
+                />
+            )}
+
+            {/* Material Create/Edit Modal */}
+            {showMaterialModal && (
+                <MaterialModal
+                    material={editingMaterial}
+                    onSave={handleSaveMaterial}
+                    onClose={() => setShowMaterialModal(false)}
+                />
+            )}
+
+            {/* Process Create/Edit Modal */}
+            {showProcessModal && (
+                <ProcessModal
+                    process={editingProcess}
+                    onSave={handleSaveProcess}
+                    onClose={() => setShowProcessModal(false)}
                 />
             )}
         </div>
@@ -834,6 +932,378 @@ function TemplateModal({
                             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                         >
                             {saving ? 'Zapisywanie...' : template ? 'Zapisz zmiany' : 'Utwórz szablon'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+// ────────── Material Create/Edit Modal ──────────
+function MaterialModal({
+    material,
+    onSave,
+    onClose,
+}: {
+    material: Material | null
+    onSave: (data: any) => void
+    onClose: () => void
+}) {
+    const [name, setName] = useState(material?.name || '')
+    const [category, setCategory] = useState(material?.category || '')
+    const [description, setDescription] = useState(material?.description || '')
+    const [variants, setVariants] = useState<{
+        width_cm: string
+        length_cm: string
+        cost_price_per_unit: string
+        markup_percentage: string
+        unit: string
+        margin_w_cm: string
+        margin_h_cm: string
+        is_active: boolean
+        tooltip_markup_percentage: string
+        tooltip_margin_w_cm: string
+        tooltip_margin_h_cm: string
+    }[]>(
+        material?.variants.map((v) => ({
+            width_cm: v.width_cm != null ? String(v.width_cm) : '',
+            length_cm: v.length_cm != null ? String(v.length_cm) : '',
+            cost_price_per_unit: String(Number(v.cost_price_per_unit)),
+            markup_percentage: String(Number(v.markup_percentage)),
+            unit: v.unit,
+            margin_w_cm: String(Number(v.margin_w_cm)),
+            margin_h_cm: String(Number(v.margin_h_cm)),
+            is_active: v.is_active,
+            tooltip_markup_percentage: v.tooltip_markup_percentage || '',
+            tooltip_margin_w_cm: v.tooltip_margin_w_cm || '',
+            tooltip_margin_h_cm: v.tooltip_margin_h_cm || '',
+        })) || [{ width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }]
+    )
+    const [saving, setSaving] = useState(false)
+
+    const addVariant = () => {
+        setVariants((prev) => [...prev, { width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }])
+    }
+
+    const removeVariant = (index: number) => {
+        setVariants((prev) => prev.filter((_, i) => i !== index))
+    }
+
+    const updateVariant = (index: number, field: string, value: any) => {
+        setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)))
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+        const payload = {
+            name,
+            category: category || null,
+            description: description || null,
+            variants: variants.map((v) => ({
+                width_cm: v.width_cm ? parseFloat(v.width_cm) : null,
+                length_cm: v.length_cm ? parseFloat(v.length_cm) : null,
+                cost_price_per_unit: parseFloat(v.cost_price_per_unit),
+                markup_percentage: parseFloat(v.markup_percentage),
+                unit: v.unit,
+                margin_w_cm: parseFloat(v.margin_w_cm),
+                margin_h_cm: parseFloat(v.margin_h_cm),
+                is_active: v.is_active,
+                tooltip_markup_percentage: v.tooltip_markup_percentage || null,
+                tooltip_margin_w_cm: v.tooltip_margin_w_cm || null,
+                tooltip_margin_h_cm: v.tooltip_margin_h_cm || null,
+            })),
+        }
+        await onSave(payload)
+        setSaving(false)
+    }
+
+    const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto mx-4">
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        {material ? 'Edytuj materiał' : 'Nowy materiał'}
+                    </h2>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Basic info */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa *</label>
+                            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} placeholder="np. Papier Lateksowy" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Kategoria</label>
+                            <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass} placeholder="np. Papier" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
+                        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={inputClass} placeholder="Opcjonalny opis" />
+                    </div>
+
+                    {/* Variants */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Warianty</h3>
+                            <button type="button" onClick={addVariant} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                Dodaj wariant
+                            </button>
+                        </div>
+
+                        {variants.map((v, index) => (
+                            <div key={index} className="p-4 bg-gray-50 rounded-lg mb-3 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-500">Wariant {index + 1}</span>
+                                    {variants.length > 1 && (
+                                        <button type="button" onClick={() => removeVariant(index)} className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-4 gap-3">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Szer. (cm)</label>
+                                        <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
+                                        <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined}>
+                                            <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
+                                        </LabelWithTooltip>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
+                                        <select value={v.unit} onChange={(e) => updateVariant(index, 'unit', e.target.value)} className={inputClass}>
+                                            <option value="m2">m²</option>
+                                            <option value="mb">mb</option>
+                                            <option value="szt">szt</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-3">
+                                    <div>
+                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined}>
+                                            <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
+                                        </LabelWithTooltip>
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined}>
+                                            <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
+                                        </LabelWithTooltip>
+                                    </div>
+                                    <div className="col-span-2 flex items-end">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                            Aktywny
+                                        </label>
+                                    </div>
+                                </div>
+                                {/* Tooltip fields */}
+                                <details className="text-xs">
+                                    <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">Tooltipy (opisy pól)</summary>
+                                    <div className="grid grid-cols-3 gap-3 mt-2">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Tooltip: Narzut</label>
+                                            <input type="text" value={v.tooltip_markup_percentage} onChange={(e) => updateVariant(index, 'tooltip_markup_percentage', e.target.value)} className={inputClass} placeholder="Opis narzutu..." />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Tooltip: Margines W</label>
+                                            <input type="text" value={v.tooltip_margin_w_cm} onChange={(e) => updateVariant(index, 'tooltip_margin_w_cm', e.target.value)} className={inputClass} placeholder="Opis marginesu W..." />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Tooltip: Margines H</label>
+                                            <input type="text" value={v.tooltip_margin_h_cm} onChange={(e) => updateVariant(index, 'tooltip_margin_h_cm', e.target.value)} className={inputClass} placeholder="Opis marginesu H..." />
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Anuluj</button>
+                        <button type="submit" disabled={saving || !name} className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                            {saving ? 'Zapisywanie...' : material ? 'Zapisz zmiany' : 'Utwórz materiał'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+// ────────── Process Create/Edit Modal ──────────
+function ProcessModal({
+    process,
+    onSave,
+    onClose,
+}: {
+    process: ProcessItem | null
+    onSave: (data: any) => void
+    onClose: () => void
+}) {
+    const [name, setName] = useState(process?.name || '')
+    const [method, setMethod] = useState(process?.method || 'AREA')
+    const [unitPrice, setUnitPrice] = useState(process ? String(Number(process.unit_price)) : '0')
+    const [setupFee, setSetupFee] = useState(process ? String(Number(process.setup_fee)) : '0')
+    const [internalCost, setInternalCost] = useState(process?.internal_cost ? String(Number(process.internal_cost)) : '')
+    const [marginW, setMarginW] = useState(process ? String(Number(process.margin_w_cm)) : '0')
+    const [marginH, setMarginH] = useState(process ? String(Number(process.margin_h_cm)) : '0')
+    const [unit, setUnit] = useState(process?.unit || 'm2')
+    const [isActive, setIsActive] = useState(process?.is_active ?? true)
+    // Tooltips
+    const [tooltipMethod, setTooltipMethod] = useState(process?.tooltip_method || '')
+    const [tooltipUnitPrice, setTooltipUnitPrice] = useState(process?.tooltip_unit_price || '')
+    const [tooltipSetupFee, setTooltipSetupFee] = useState(process?.tooltip_setup_fee || '')
+    const [tooltipInternalCost, setTooltipInternalCost] = useState(process?.tooltip_internal_cost || '')
+    const [tooltipMarginW, setTooltipMarginW] = useState(process?.tooltip_margin_w_cm || '')
+    const [tooltipMarginH, setTooltipMarginH] = useState(process?.tooltip_margin_h_cm || '')
+    const [saving, setSaving] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+        const payload = {
+            name,
+            method,
+            unit_price: parseFloat(unitPrice),
+            setup_fee: parseFloat(setupFee),
+            internal_cost: internalCost ? parseFloat(internalCost) : null,
+            margin_w_cm: parseFloat(marginW),
+            margin_h_cm: parseFloat(marginH),
+            unit: unit || null,
+            is_active: isActive,
+            tooltip_method: tooltipMethod || null,
+            tooltip_unit_price: tooltipUnitPrice || null,
+            tooltip_setup_fee: tooltipSetupFee || null,
+            tooltip_internal_cost: tooltipInternalCost || null,
+            tooltip_margin_w_cm: tooltipMarginW || null,
+            tooltip_margin_h_cm: tooltipMarginH || null,
+        }
+        await onSave(payload)
+        setSaving(false)
+    }
+
+    const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        {process ? 'Edytuj proces' : 'Nowy proces'}
+                    </h2>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa *</label>
+                            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} placeholder="np. Cięcie CNC" />
+                        </div>
+                        <div>
+                            <LabelWithTooltip label="Metoda *" tooltipText={tooltipMethod || undefined}>
+                                <select value={method} onChange={(e) => setMethod(e.target.value)} className={inputClass}>
+                                    <option value="AREA">AREA (powierzchnia)</option>
+                                    <option value="LINEAR">LINEAR (obwód)</option>
+                                    <option value="TIME">TIME (czas)</option>
+                                    <option value="UNIT">UNIT (sztuki)</option>
+                                </select>
+                            </LabelWithTooltip>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <LabelWithTooltip label="Cena/jedn. *" tooltipText={tooltipUnitPrice || undefined}>
+                            <input type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} step="0.01" required className={inputClass} />
+                        </LabelWithTooltip>
+                        <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
+                            <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
+                        </LabelWithTooltip>
+                        <LabelWithTooltip label="Koszt wewn." tooltipText={tooltipInternalCost || undefined}>
+                            <input type="number" value={internalCost} onChange={(e) => setInternalCost(e.target.value)} step="0.01" className={inputClass} placeholder="Opcjonalnie" />
+                        </LabelWithTooltip>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <LabelWithTooltip label="Margines W (cm)" tooltipText={tooltipMarginW || undefined}>
+                            <input type="number" value={marginW} onChange={(e) => setMarginW(e.target.value)} step="0.1" className={inputClass} />
+                        </LabelWithTooltip>
+                        <LabelWithTooltip label="Margines H (cm)" tooltipText={tooltipMarginH || undefined}>
+                            <input type="number" value={marginH} onChange={(e) => setMarginH(e.target.value)} step="0.1" className={inputClass} />
+                        </LabelWithTooltip>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Jednostka</label>
+                            <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inputClass}>
+                                <option value="m2">m²</option>
+                                <option value="mb">mb</option>
+                                <option value="szt">szt</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" id="procIsActive" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        <label htmlFor="procIsActive" className="text-sm font-medium text-gray-700">Aktywny</label>
+                    </div>
+
+                    {/* Tooltip fields */}
+                    <details className="text-sm">
+                        <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">Tooltipy (opisy pól)</summary>
+                        <div className="grid grid-cols-2 gap-4 mt-3">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Metoda</label>
+                                <input type="text" value={tooltipMethod} onChange={(e) => setTooltipMethod(e.target.value)} className={inputClass} placeholder="Opis metody..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Cena/jedn.</label>
+                                <input type="text" value={tooltipUnitPrice} onChange={(e) => setTooltipUnitPrice(e.target.value)} className={inputClass} placeholder="Opis ceny..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Opłata start.</label>
+                                <input type="text" value={tooltipSetupFee} onChange={(e) => setTooltipSetupFee(e.target.value)} className={inputClass} placeholder="Opis opłaty..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Koszt wewn.</label>
+                                <input type="text" value={tooltipInternalCost} onChange={(e) => setTooltipInternalCost(e.target.value)} className={inputClass} placeholder="Opis kosztu..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Margines W</label>
+                                <input type="text" value={tooltipMarginW} onChange={(e) => setTooltipMarginW(e.target.value)} className={inputClass} placeholder="Opis marginesu W..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tooltip: Margines H</label>
+                                <input type="text" value={tooltipMarginH} onChange={(e) => setTooltipMarginH(e.target.value)} className={inputClass} placeholder="Opis marginesu H..." />
+                            </div>
+                        </div>
+                    </details>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Anuluj</button>
+                        <button type="submit" disabled={saving || !name} className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                            {saving ? 'Zapisywanie...' : process ? 'Zapisz zmiany' : 'Utwórz proces'}
                         </button>
                     </div>
                 </form>
