@@ -37,6 +37,9 @@ class MaterialVariantBase(BaseModel):
     margin_w_cm: Decimal = Decimal("0.0")
     margin_h_cm: Decimal = Decimal("0.0")
     is_active: bool = True
+    tooltip_margin_w_cm: Optional[str] = None
+    tooltip_margin_h_cm: Optional[str] = None
+    tooltip_markup_percentage: Optional[str] = None
 
 
 class MaterialVariantCreate(MaterialVariantBase):
@@ -82,6 +85,12 @@ class ProcessBase(BaseModel):
     margin_h_cm: Decimal = Decimal("0.0")
     unit: Optional[str] = None
     is_active: bool = True
+    tooltip_method: Optional[str] = None
+    tooltip_unit_price: Optional[str] = None
+    tooltip_setup_fee: Optional[str] = None
+    tooltip_internal_cost: Optional[str] = None
+    tooltip_margin_w_cm: Optional[str] = None
+    tooltip_margin_h_cm: Optional[str] = None
 
 
 class ProcessCreate(ProcessBase):
@@ -98,6 +107,12 @@ class ProcessUpdate(BaseModel):
     margin_h_cm: Optional[Decimal] = None
     unit: Optional[str] = None
     is_active: Optional[bool] = None
+    tooltip_method: Optional[str] = None
+    tooltip_unit_price: Optional[str] = None
+    tooltip_setup_fee: Optional[str] = None
+    tooltip_internal_cost: Optional[str] = None
+    tooltip_margin_w_cm: Optional[str] = None
+    tooltip_margin_h_cm: Optional[str] = None
 
 
 class ProcessResponse(ProcessBase):
@@ -137,6 +152,9 @@ class ProductTemplateBase(BaseModel):
     default_margin_h_cm: Decimal = Decimal("0.0")
     default_overlap_cm: Decimal = Decimal("1.0")
     is_active: bool = True
+    tooltip_margin_w_cm: Optional[str] = None
+    tooltip_margin_h_cm: Optional[str] = None
+    tooltip_overlap_cm: Optional[str] = None
 
 
 class ProductTemplateCreate(ProductTemplateBase):
@@ -151,6 +169,9 @@ class ProductTemplateUpdate(BaseModel):
     default_overlap_cm: Optional[Decimal] = None
     is_active: Optional[bool] = None
     components: Optional[List[TemplateComponentCreate]] = None
+    tooltip_margin_w_cm: Optional[str] = None
+    tooltip_margin_h_cm: Optional[str] = None
+    tooltip_overlap_cm: Optional[str] = None
 
 
 class ProductTemplateResponse(ProductTemplateBase):
@@ -178,6 +199,7 @@ class ComponentResult(BaseModel):
     unit: str
     price_net: float
     details: str
+    is_rotated: bool = False
 
 
 class CalculationResponse(BaseModel):

@@ -40,6 +40,12 @@ interface ProcessItem {
     margin_h_cm: number
     unit: string | null
     is_active: boolean
+    tooltip_method: string | null
+    tooltip_unit_price: string | null
+    tooltip_setup_fee: string | null
+    tooltip_internal_cost: string | null
+    tooltip_margin_w_cm: string | null
+    tooltip_margin_h_cm: string | null
 }
 
 interface TemplateComponent {
@@ -61,6 +67,9 @@ interface Template {
     default_margin_h_cm: number
     default_overlap_cm: number
     is_active: boolean
+    tooltip_margin_w_cm: string | null
+    tooltip_margin_h_cm: string | null
+    tooltip_overlap_cm: string | null
     components: TemplateComponent[]
 }
 
@@ -241,514 +250,74 @@ export default function AdminPage() {
                             </svg>
                             Kalkulator
                         </Link>
-                    </div>
-                </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Error banner */}
-                {error && (
-                    <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                        {error}
-                    </div>
-                )}
-
-                {/* Tabs */}
-                <div className="flex items-center gap-1 mb-6 bg-white rounded-xl shadow-sm border p-1">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                        >
-                            {tab.label}
-                            <span
-                                className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-blue-500 text-blue-100' : 'bg-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                {tab.count}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-
-                {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-                    </div>
-                ) : (
-                    <>
-                        {/* Templates Tab */}
-                        {activeTab === 'templates' && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Szablony produktów</h2>
-                                    <button
-                                        onClick={openCreateTemplate}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj szablon
-                                    </button>
-                                </div>
-
-                                {templates.length === 0 ? (
-                                    <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-                                        <p className="text-gray-500">Brak szablonów. Kliknij &quot;Dodaj szablon&quot; aby utworzyć pierwszy.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {templates.map((t) => (
-                                            <div key={t.id} className="bg-white rounded-xl shadow-sm border p-6">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3">
-                                                            <h3 className="text-lg font-semibold text-gray-900">{t.name}</h3>
-                                                            <span
-                                                                className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                                                                    }`}
-                                                            >
-                                                                {t.is_active ? 'Aktywny' : 'Nieaktywny'}
-                                                            </span>
-                                                        </div>
-                                                        {t.description && (
-                                                            <p className="text-sm text-gray-500 mt-1">{t.description}</p>
-                                                        )}
-                                                        <div className="flex gap-6 mt-3 text-sm text-gray-600">
-                                                            <span>Margines: {Number(t.default_margin_w_cm)}×{Number(t.default_margin_h_cm)} cm</span>
-                                                            <span>Zakładka: {Number(t.default_overlap_cm)} cm</span>
-                                                            <span>Komponenty: {t.components.length}</span>
-                                                        </div>
-
-                                                        {/* Component list */}
-                                                        {t.components.length > 0 && (
-                                                            <div className="mt-4 space-y-1">
-                                                                {t.components
-                                                                    .sort((a, b) => a.sort_order - b.sort_order)
-                                                                    .map((c, i) => {
-                                                                        const name = c.material_id
-                                                                            ? materials.find((m) => m.id === c.material_id)?.name || `Materiał #${c.material_id}`
-                                                                            : processes.find((p) => p.id === c.process_id)?.name || `Proces #${c.process_id}`
-                                                                        const type = c.material_id ? 'Materiał' : 'Proces'
-                                                                        return (
-                                                                            <div key={i} className="flex items-center gap-2 text-sm">
-                                                                                <span
-                                                                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${c.material_id
-                                                                                        ? 'bg-purple-100 text-purple-700'
-                                                                                        : 'bg-orange-100 text-orange-700'
-                                                                                        }`}
-                                                                                >
-                                                                                    {type}
-                                                                                </span>
-                                                                                <span className="text-gray-700">{name}</span>
-                                                                                {!c.is_required && (
-                                                                                    <span className="text-xs text-gray-400">(opcjonalny)</span>
-                                                                                )}
-                                                                            </div>
-                                                                        )
-                                                                    })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 ml-4">
-                                                        <button
-                                                            onClick={() => openEditTemplate(t)}
-                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Edytuj"
-                                                        >
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteTemplate(t.id)}
-                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Usuń"
-                                                        >
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
-                        )}
-
-                        {/* Materials Tab */}
-                        {activeTab === 'materials' && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Materiały</h2>
-                                    <button
-                                        onClick={openCreateMaterial}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj materiał
-                                    </button>
-                                </div>
-
-                                {materials.length === 0 ? (
-                                    <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-                                        <p className="text-gray-500">Brak materiałów. Kliknij &quot;Dodaj materiał&quot; aby utworzyć pierwszy.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {materials.map((m) => (
-                                            <div key={m.id} className="bg-white rounded-xl shadow-sm border p-6">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3">
-                                                            <h3 className="text-lg font-semibold text-gray-900">{m.name}</h3>
-                                                            {m.category && (
-                                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                                                    {m.category}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {m.description && (
-                                                            <p className="text-sm text-gray-500 mt-1">{m.description}</p>
-                                                        )}
-                                                        {m.variants.length > 0 && (
-                                                            <div className="mt-3 overflow-hidden rounded-lg border">
-                                                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                                                    <thead className="bg-gray-50">
-                                                                        <tr>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Szer. (cm)</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Cena/jedn.</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Narzut %</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Margines W</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Jedn.</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody className="divide-y divide-gray-100">
-                                                                        {m.variants.map((v, i) => (
-                                                                            <tr key={i}>
-                                                                                <td className="px-4 py-2 text-gray-900">{v.width_cm ?? '—'}</td>
-                                                                                <td className="px-4 py-2 text-gray-900">{Number(v.cost_price_per_unit).toFixed(2)} zł</td>
-                                                                                <td className="px-4 py-2 text-gray-900">{Number(v.markup_percentage)}%</td>
-                                                                                <td className="px-4 py-2 text-gray-900">{Number(v.margin_w_cm)} cm</td>
-                                                                                <td className="px-4 py-2 text-gray-900">{v.unit}</td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 ml-4">
-                                                        <button
-                                                            onClick={() => openEditMaterial(m)}
-                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Edytuj"
-                                                        >
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteMaterial(m.id)}
-                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Usuń"
-                                                        >
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Processes Tab */}
-                        {activeTab === 'processes' && (
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Procesy</h2>
-                                    <button
-                                        onClick={openCreateProcess}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj proces
-                                    </button>
-                                </div>
-
-                                {processes.length === 0 ? (
-                                    <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-                                        <p className="text-gray-500">Brak procesów. Kliknij &quot;Dodaj proces&quot; aby utworzyć pierwszy.</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-hidden bg-white rounded-xl shadow-sm border">
-                                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Nazwa</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Metoda</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Cena/jedn.</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Opłata startowa</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Koszt wewn.</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Margines</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Status</th>
-                                                    <th className="px-6 py-3 text-right font-medium text-gray-500">Akcje</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-100">
-                                                {processes.map((p) => (
-                                                    <tr key={p.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
-                                                        <td className="px-6 py-4">
-                                                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                                                                {p.method}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-gray-900">{Number(p.unit_price).toFixed(2)} zł/{p.unit || 'szt'}</td>
-                                                        <td className="px-6 py-4 text-gray-600">{Number(p.setup_fee).toFixed(2)} zł</td>
-                                                        <td className="px-6 py-4 text-gray-600">{p.internal_cost ? `${Number(p.internal_cost).toFixed(2)} zł` : '—'}</td>
-                                                        <td className="px-6 py-4 text-gray-600">{Number(p.margin_w_cm)}×{Number(p.margin_h_cm)} cm</td>
-                                                        <td className="px-6 py-4">
-                                                            <span
-                                                                className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                                                                    }`}
-                                                            >
-                                                                {p.is_active ? 'Aktywny' : 'Nieaktywny'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <div className="flex items-center justify-end gap-1">
-                                                                <button
-                                                                    onClick={() => openEditProcess(p)}
-                                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
-                                                                    title="Edytuj"
-                                                                >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                    </svg>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteProcess(p.id)}
-                                                                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
-                                                                    title="Usuń"
-                                                                >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-
-            {/* Template Create/Edit Modal */}
-            {showModal && (
-                <TemplateModal
-                    template={editingTemplate}
-                    materials={materials}
-                    processes={processes}
-                    onSave={handleSaveTemplate}
-                    onClose={() => setShowModal(false)}
-                />
-            )}
-
-            {/* Material Create/Edit Modal */}
-            {showMaterialModal && (
-                <MaterialModal
-                    material={editingMaterial}
-                    onSave={handleSaveMaterial}
-                    onClose={() => setShowMaterialModal(false)}
-                />
-            )}
-
-            {/* Process Create/Edit Modal */}
-            {showProcessModal && (
-                <ProcessModal
-                    process={editingProcess}
-                    onSave={handleSaveProcess}
-                    onClose={() => setShowProcessModal(false)}
-                />
-            )}
-        </div>
-    )
-}
-
-// ────────── Template Create/Edit Modal ──────────
-function TemplateModal({
-    template,
-    materials,
-    processes,
-    onSave,
-    onClose,
-}: {
-    template: Template | null
-    materials: Material[]
-    processes: ProcessItem[]
-    onSave: (data: any) => void
-    onClose: () => void
-}) {
-    const [name, setName] = useState(template?.name || '')
-    const [description, setDescription] = useState(template?.description || '')
-    const [marginW, setMarginW] = useState(String(template ? Number(template.default_margin_w_cm) : '0.5'))
-    const [marginH, setMarginH] = useState(String(template ? Number(template.default_margin_h_cm) : '0.5'))
-    const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
-    const [isActive, setIsActive] = useState(template?.is_active ?? true)
-    const [components, setComponents] = useState<
-        { type: 'material' | 'process'; refId: string; isRequired: boolean; sortOrder: number }[]
-    >(
-        template?.components.map((c) => ({
-            type: c.material_id ? 'material' : 'process',
-            refId: String(c.material_id || c.process_id || ''),
-            isRequired: c.is_required,
-            sortOrder: c.sort_order,
-        })) || []
-    )
-    const [saving, setSaving] = useState(false)
-
-    const addComponent = () => {
-        setComponents((prev) => [
-            ...prev,
-            {
-                type: 'material',
-                refId: materials[0]?.id ? String(materials[0].id) : '',
-                isRequired: true,
-                sortOrder: prev.length,
-            },
-        ])
-    }
-
-    const removeComponent = (index: number) => {
-        setComponents((prev) => prev.filter((_, i) => i !== index))
-    }
-
-    const updateComponent = (index: number, field: string, value: any) => {
-        setComponents((prev) =>
-            prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
-        )
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setSaving(true)
-
-        const payload: any = {
-            name,
-            description: description || null,
-            default_margin_w_cm: parseFloat(marginW),
-            default_margin_h_cm: parseFloat(marginH),
-            default_overlap_cm: parseFloat(overlap),
-            is_active: isActive,
-            components: components.map((c) => ({
-                material_id: c.type === 'material' ? parseInt(c.refId) : null,
-                process_id: c.type === 'process' ? parseInt(c.refId) : null,
-                is_required: c.isRequired,
-                sort_order: c.sortOrder,
-            })),
-        }
-
-        await onSave(payload)
-        setSaving(false)
-    }
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                        {template ? 'Edytuj szablon' : 'Nowy szablon'}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Basic info */}
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa *</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="np. Fototapeta Lateksowa"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                rows={2}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Opcjonalny opis szablonu"
-                            />
                         </div>
                     </div>
 
-                    {/* Parameters */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Margines W (cm)</label>
-                            <input
-                                type="number"
-                                value={marginW}
-                                onChange={(e) => setMarginW(e.target.value)}
-                                step="0.1"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Margines H (cm)</label>
-                            <input
-                                type="number"
-                                value={marginH}
-                                onChange={(e) => setMarginH(e.target.value)}
-                                step="0.1"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Zakładka (cm)</label>
-                            <input
-                                type="number"
-                                value={overlap}
-                                onChange={(e) => setOverlap(e.target.value)}
-                                step="0.1"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
+                    {/* Tooltips */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Tooltips</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip metoda</label>
+                                <input
+                                    type="text"
+                                    value={tooltipMethod}
+                                    onChange={(e) => setTooltipMethod(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip cena/jedn.</label>
+                                <input
+                                    type="text"
+                                    value={tooltipUnitPrice}
+                                    onChange={(e) => setTooltipUnitPrice(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip opłata startowa</label>
+                                <input
+                                    type="text"
+                                    value={tooltipSetupFee}
+                                    onChange={(e) => setTooltipSetupFee(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip koszt wewn.</label>
+                                <input
+                                    type="text"
+                                    value={tooltipInternalCost}
+                                    onChange={(e) => setTooltipInternalCost(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip margines W</label>
+                                <input
+                                    type="text"
+                                    value={tooltipMarginW}
+                                    onChange={(e) => setTooltipMarginW(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip margines H</label>
+                                <input
+                                    type="text"
+                                    value={tooltipMarginH}
+                                    onChange={(e) => setTooltipMarginH(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Tekst pomocy (opcjonalnie)"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -1195,6 +764,14 @@ function ProcessModal({
     const [unit, setUnit] = useState(process?.unit || 'm2')
     const [isActive, setIsActive] = useState(process?.is_active ?? true)
     const [saving, setSaving] = useState(false)
+    
+    // Tooltips
+    const [tooltipMethod, setTooltipMethod] = useState(process?.tooltip_method || '')
+    const [tooltipUnitPrice, setTooltipUnitPrice] = useState(process?.tooltip_unit_price || '')
+    const [tooltipSetupFee, setTooltipSetupFee] = useState(process?.tooltip_setup_fee || '')
+    const [tooltipInternalCost, setTooltipInternalCost] = useState(process?.tooltip_internal_cost || '')
+    const [tooltipMarginW, setTooltipMarginW] = useState(process?.tooltip_margin_w_cm || '')
+    const [tooltipMarginH, setTooltipMarginH] = useState(process?.tooltip_margin_h_cm || '')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -1210,6 +787,12 @@ function ProcessModal({
             margin_h_cm: parseFloat(marginH),
             unit: unit || null,
             is_active: isActive,
+            tooltip_method: tooltipMethod || null,
+            tooltip_unit_price: tooltipUnitPrice || null,
+            tooltip_setup_fee: tooltipSetupFee || null,
+            tooltip_internal_cost: tooltipInternalCost || null,
+            tooltip_margin_w_cm: tooltipMarginW || null,
+            tooltip_margin_h_cm: tooltipMarginH || null,
         }
 
         await onSave(payload)
