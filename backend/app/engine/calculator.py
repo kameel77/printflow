@@ -71,46 +71,55 @@ class PrintFlowEngine:
         material_id: int,
         overlap: Decimal
     ) -> Optional[Dict]:
-        """Best-Fit algorithm: select optimal material variant"""
+        """Best-Fit algorithm: select optimal material variant and orientation"""
         variants = self.db.get('material_variants', {}).get(material_id, [])
         best_v = None
         min_total_cost = Decimal("Infinity")
         
-        for v in variants:
-            v_width = self._q(v['width_cm'])
-            effective_v_w = v_width - (self._q(v.get('margin_w_cm', 0)) * 2)
+        # Try both orientations to find the most efficient fit
+        orientations = [(w_g, h_g)]
+        if w_g != h_g:
+            orientations.append((h_g, w_g))
             
-            # Splitting logic
-            if w_g > effective_v_w:
-                num_p = math.ceil(w_g / effective_v_w)
-                panel_w = (w_g / num_p) + overlap
-            else:
-                num_p = 1
-                panel_w = w_g
-            
-            # Nesting logic
-            panels_side_by_side = math.floor(effective_v_w / panel_w)
-            if panels_side_by_side == 0:
-                continue
-            
-            total_panels = num_p * qty
-            rows = math.ceil(total_panels / panels_side_by_side)
-            total_len_cm = rows * h_g
-            
-            # Cost calculation
-            area_m2 = (v_width / 100) * (total_len_cm / 100)
-            cost = area_m2 * self._q(v['cost_price_per_unit'])
-            
-            if cost < min_total_cost:
-                min_total_cost = cost
-                best_v = {
-                    **v,
-                    "num_p": num_p,
-                    "total_len": total_len_cm,
-                    "area": area_m2,
-                    "panel_w": panel_w,
-                    "cost": cost
-                }
+        for cur_w, cur_h in orientations:
+            for v in variants:
+                v_width = self._q(v['width_cm'])
+                effective_v_w = v_width - (self._q(v.get('margin_w_cm', 0)) * 2)
+                
+                # Splitting logic
+                if cur_w > effective_v_w:
+                    num_p = math.ceil(cur_w / effective_v_w)
+                    panel_w = (cur_w / num_p) + overlap
+                else:
+                    num_p = 1
+                    panel_w = cur_w
+                
+                # Nesting logic
+                panels_side_by_side = math.floor(effective_v_w / panel_w)
+                if panels_side_by_side == 0:
+                    continue
+                
+                total_panels = num_p * qty
+                rows = math.ceil(total_panels / panels_side_by_side)
+                total_len_cm = rows * cur_h
+                
+                # Cost calculation
+                area_m2 = (v_width / 100) * (total_len_cm / 100)
+                cost = area_m2 * self._q(v['cost_price_per_unit'])
+                
+                if cost < min_total_cost:
+                    min_total_cost = cost
+                    best_v = {
+                        **v,
+                        "num_p": num_p,
+                        "total_len": total_len_cm,
+                        "area": area_m2,
+                        "panel_w": panel_w,
+                        "cost": cost,
+                        "used_w": cur_w,
+                        "used_h": cur_h,
+                        "is_rotated": cur_w == h_g and cur_h == w_g and w_g != h_g
+                    }
         
         return best_v
     
@@ -133,6 +142,9 @@ class PrintFlowEngine:
         is_split = False
         num_panels = 1
         
+        # Dimensions used for calculation (may be swapped if auto-rotated)
+        cur_w_g, cur_h_g = w_g, h_g
+        
         # Get active components
         active_comps = []
         if template:
@@ -140,7 +152,8 @@ class PrintFlowEngine:
                 if c.get('is_required', True) or c['id'] in req.selected_options:
                     active_comps.append(c)
         
-        # Process components
+        # Process materials first to establish orientation
+        # (In a more complex engine, we'd pre-calculate the best orientation for all materials)
         for comp in active_comps:
             if comp.get('material_id'):
                 res = self.calculate_nesting_and_splitting(
@@ -152,21 +165,28 @@ class PrintFlowEngine:
                         f"Material {comp.get('name', 'Unknown')} too narrow for {w_g}cm"
                     )
                 
+                # Update orientation based on the best fit found
                 is_split = res['num_p'] > 1
                 num_panels = res['num_p']
+                cur_w_g = res['used_w']
+                cur_h_g = res['used_h']
                 
                 price = res['cost'] * (1 + self._q(res['markup_percentage']) / 100)
                 
                 total_cost += res['cost']
                 total_price += price
                 
+                rotated_flag = res.get('is_rotated', False)
+                rot_text = "tak" if rotated_flag else "nie"
+
                 tech_view.append(ComponentResult(
                     name=f"{comp.get('name', 'Material')} (Rolka {res['width_cm']}cm)",
                     type="MATERIAL",
                     qty=float(res['area']),
                     unit="m2",
                     price_net=self._money(price),
-                    details=f"Bryty: {num_panels}, Zakładka: {overlap}cm, Szer. brytu: {res['panel_w']:.1f}cm"
+                    details=f"Bryty: {num_panels}, Zakładka: {overlap}cm, Szer. brytu: {res['panel_w']:.1f}cm, Rotacja: {rot_text}",
+                    is_rotated=rotated_flag
                 ))
             
             elif comp.get('process_id'):
@@ -174,12 +194,13 @@ class PrintFlowEngine:
                 if not proc:
                     continue
                 
-                # Calculate process quantity
+                # Calculate process quantity using the active orientation
                 if proc['method'] == CalculationMethod.LINEAR:
-                    panel_w_with_overlap = (w_g / num_panels) + (overlap if is_split else 0)
-                    p_qty = (2 * (panel_w_with_overlap + h_g)) / 100 * num_panels * req.quantity
+                    # For linear, we sum perimeters of all panels
+                    panel_w_with_overlap = (cur_w_g / num_panels) + (overlap if is_split else 0)
+                    p_qty = (2 * (panel_w_with_overlap + cur_h_g)) / 100 * num_panels * req.quantity
                 else:  # AREA
-                    p_qty = (w_g / 100) * (h_g / 100) * req.quantity
+                    p_qty = (cur_w_g / 100) * (cur_h_g / 100) * req.quantity
                 
                 cost = (p_qty * self._q(proc.get('internal_cost', 0))) + self._q(proc.get('setup_fee', 0))
                 price = (p_qty * self._q(proc['unit_price'])) + self._q(proc.get('setup_fee', 0))
@@ -187,13 +208,17 @@ class PrintFlowEngine:
                 total_cost += cost
                 total_price += price
                 
+                rotated_flag = cur_w_g == h_g and cur_h_g == w_g and w_g != h_g
+                rot_text = "tak" if rotated_flag else "nie"
+
                 tech_view.append(ComponentResult(
                     name=proc['name'],
                     type="PROCESS",
                     qty=float(p_qty),
                     unit=proc.get('unit', 'szt'),
                     price_net=self._money(price),
-                    details=f"Metoda: {proc['method']}, Naddatek: {proc.get('margin_w_cm', 0)}cm"
+                    details=f"Metoda: {proc['method']}, Naddatek: {proc.get('margin_w_cm', 0)}cm, Rotacja: {rot_text}",
+                    is_rotated=rotated_flag
                 ))
         
         # Calculate margin

@@ -56,6 +56,11 @@ class MaterialVariant(Base):
     margin_h_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     is_active = Column(Boolean, default=True)
     
+    # Tooltips
+    tooltip_margin_w_cm = Column(String(500))
+    tooltip_margin_h_cm = Column(String(500))
+    tooltip_markup_percentage = Column(String(500))
+    
     material = relationship("Material", back_populates="variants")
 
 
@@ -72,6 +77,14 @@ class Process(Base):
     margin_h_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     unit = Column(String(10))
     is_active = Column(Boolean, default=True)
+    
+    # Tooltips
+    tooltip_method = Column(String(500))
+    tooltip_unit_price = Column(String(500))
+    tooltip_setup_fee = Column(String(500))
+    tooltip_internal_cost = Column(String(500))
+    tooltip_margin_w_cm = Column(String(500))
+    tooltip_margin_h_cm = Column(String(500))
 
 
 class ProductTemplate(Base):
@@ -84,6 +97,11 @@ class ProductTemplate(Base):
     default_margin_h_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     default_overlap_cm = Column(Numeric(10, 2), default=Decimal("1.0"))
     is_active = Column(Boolean, default=True)
+    
+    # Tooltips
+    tooltip_margin_w_cm = Column(String(500))
+    tooltip_margin_h_cm = Column(String(500))
+    tooltip_overlap_cm = Column(String(500))
     
     components = relationship("TemplateComponent", back_populates="template", cascade="all, delete-orphan")
 

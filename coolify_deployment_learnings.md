@@ -153,7 +153,41 @@ networks:
 2.  **Domains**:
     *   Assign domains in the "Domains" section for each service you want valid SSL certificates for.
 
+## 5. Troubleshooting Common Runtime Errors
+
+### A. "InvalidPasswordError" (Postgres)
+Changing `POSTGRES_PASSWORD` in Coolify ENV variables **does not** update the password in an already initialized database.
+*   **Symptom**: Logs show `asyncpg.exceptions.InvalidPasswordError: password authentication failed`.
+*   **Cause**: PostgreSQL only sets the password once, during the very first startup when the volume is empty. Subsequent changes to the ENV variable are ignored by the internal DB files.
+*   **Fix**: 
+    1.  Go to the database service in Coolify -> **Persistent Storage**.
+    2.  Delete the existing volume.
+    3.  **Redeploy/Restart** the database. It will re-initialize with the new password. 
+    *   *Warning: This deletes all data in the database!*
+
+### B. "volumes must be a array" Error
+This occurs if you delete all volumes for a database service and try to start it.
+*   **Symptom**: Deployment log shows `services.[uuid].volumes must be a array`.
+*   **Cause**: Coolify's internal generator produces an invalid `docker-compose.yml` if the `volumes` list is empty.
+*   **Fix**: 
+    1.  Go to **Persistent Storage** -> **Add Volume Mount**.
+    2.  **Name**: Give it a new name (e.g., `db_data_v2`).
+    3.  **Destination Path**: Must be `/var/lib/postgresql/data` for Postgres.
+    4.  Save and Start.
+
+### C. Frontend "Wystąpił błąd podczas kalkulacji" (API URL Issues)
+If the frontend looks okay but fails to fetch data or "feels broken" on production.
+*   **Symptom**: Browser console shows errors connecting to `localhost:8000` while viewing the site on a public URL.
+*   **Cause**: `NEXT_PUBLIC_API_URL` was not set or set incorrectly.
+*   **Critical Fact**: Variables starting with `NEXT_PUBLIC_` are "baked" into the JavaScript code **at build time**. 
+*   **Fix**: 
+    1.  Set `NEXT_PUBLIC_API_URL` to the **public** URL of your backend.
+    2.  **CRITICAL**: You MUST perform a **Redeploy** (Build) of the frontend in Coolify. A simple "Restart" is not enough, as the old URL is already compiled into the code.
+
+---
+
 ## Summary of Fixes for "PrintFlow"
 1.  **503 Error**: Solved by setting `traefik.docker.network=coolify` AND disabling the failing `healthcheck`.
 2.  **404 Error**: Solved by ensuring Traefik labels used the correct `Host()` rule and the container was exposed on the right internal port (`3000`).
-3.  **Communication**: Backend and Frontend communicate over the internal `printflow` (bridge) network using service names (`http://backend:8000`).
+3.  **Database Connection**: Solved by recreating the Postgres volume in Coolify to sync the password with the ENV variables.
+4.  **Frontend API**: Solved by setting `NEXT_PUBLIC_API_URL` and performing a full **Redeploy** to update the client-side code.

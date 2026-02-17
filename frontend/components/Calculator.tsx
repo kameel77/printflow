@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
+import { LabelWithTooltip } from './Tooltip'
 
 interface CalculationResult {
   total_price_net: number
@@ -25,6 +26,7 @@ interface CalculationResult {
     unit: string
     price_net: number
     details: string
+    is_rotated?: boolean
   }>
 }
 
@@ -32,6 +34,9 @@ interface Template {
   id: number
   name: string
   description: string
+  tooltip_margin_w_cm?: string | null
+  tooltip_margin_h_cm?: string | null
+  tooltip_overlap_cm?: string | null
   components?: Array<{
     id: number
     name: string
@@ -40,7 +45,7 @@ interface Template {
   }>
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
 export default function Calculator() {
   // Input parameters
@@ -244,19 +249,52 @@ export default function Calculator() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Szerokość (cm)
-                  </label>
+                  <LabelWithTooltip
+                    label="Szerokość (cm)"
+                    tooltipText={currentTemplate?.tooltip_margin_w_cm || 'Szerokość gotowego produktu w centymetrach'}
+                  >
+                    <input
+                      type="number"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      min="1"
+                      step="0.1"
+                      placeholder="np. 200"
+                    />
+                  </LabelWithTooltip>
+                </div>
+
+                <div>
+                  <LabelWithTooltip
+                    label="Wysokość (cm)"
+                    tooltipText={currentTemplate?.tooltip_margin_h_cm || 'Wysokość gotowego produktu w centymetrach'}
+                  >
+                    <input
+                      type="number"
+                      value={height}
+                      onChange={(e) => setHeight(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      min="1"
+                      step="0.1"
+                      placeholder="np. 120"
+                    />
+                  </LabelWithTooltip>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <LabelWithTooltip label="Ilość sztuk" tooltipText="Liczba sztuk do wyprodukowania">
                   <input
                     type="number"
-                    value={width}
-                    onChange={(e) => setWidth(e.target.value)}
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     min="1"
-                    step="0.1"
-                    placeholder="np. 200"
+                    placeholder="1"
                   />
-                </div>
+                </LabelWithTooltip>
+              </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -370,18 +408,20 @@ export default function Calculator() {
               </h2>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nadpisanie zakładki (cm)
-                </label>
-                <input
-                  type="number"
-                  value={overlapOverride}
-                  onChange={(e) => setOverlapOverride(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  min="0"
-                  step="0.1"
-                  placeholder="Domyślnie z szablonu"
-                />
+                <LabelWithTooltip
+                  label="Nadpisanie zakładki (cm)"
+                  tooltipText={currentTemplate?.tooltip_overlap_cm || 'Zakładka na łączeniu paneli (używane przy panelowaniu)'}
+                >
+                  <input
+                    type="number"
+                    value={overlapOverride}
+                    onChange={(e) => setOverlapOverride(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    min="0"
+                    step="0.1"
+                    placeholder="Domyślnie z szablonu"
+                  />
+                </LabelWithTooltip>
                 <p className="mt-1 text-xs text-gray-500">
                   Pozostaw puste, aby użyć wartości domyślnej z szablonu
                 </p>
@@ -491,14 +531,25 @@ export default function Calculator() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${component.type === 'MATERIAL'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : 'bg-orange-100 text-orange-800'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-orange-100 text-orange-800'
                                 }`}>
                                 {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
                               </span>
                               <h4 className="font-medium text-gray-900">{component.name}</h4>
                             </div>
-                            <p className="text-sm text-gray-500">{component.details}</p>
+                            <p className="text-sm text-gray-500">
+                              {component.details.split(', Rotacja:').map((part, i) => (
+                                i === 0 ? part : (
+                                  <span key={i}>
+                                    , Rotacja:
+                                    <span className={component.is_rotated ? "font-bold text-red-600" : ""}>
+                                      {part}
+                                    </span>
+                                  </span>
+                                )
+                              ))}
+                            </p>
                           </div>
                           <div className="text-right ml-4">
                             <p className="font-semibold text-gray-900">{formatCurrency(component.price_net)}</p>
