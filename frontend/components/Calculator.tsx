@@ -47,7 +47,7 @@ export default function Calculator() {
   const [width, setWidth] = useState<string>('200')
   const [height, setHeight] = useState<string>('120')
   const [quantity, setQuantity] = useState<string>('1')
-  const [templateId, setTemplateId] = useState<string>('1')
+  const [templateId, setTemplateId] = useState<string>('')
   const [overlapOverride, setOverlapOverride] = useState<string>('')
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
 
@@ -69,18 +69,33 @@ export default function Calculator() {
     if (templateId) {
       fetchTemplateDetails(parseInt(templateId))
       setSelectedOptions([]) // Reset options when template changes
+    } else {
+      setCurrentTemplate(null)
     }
   }, [templateId])
 
+  // Helper: check if inputs are valid for calculation
+  const canCalculate = Boolean(
+    templateId &&
+    width && parseFloat(width) > 0 &&
+    height && parseFloat(height) > 0 &&
+    quantity && parseInt(quantity) > 0
+  )
+
   // Auto-calculate when parameters change
   useEffect(() => {
-    if (autoCalculate && width && height && quantity) {
+    if (autoCalculate && canCalculate) {
       const timeoutId = setTimeout(() => {
         handleCalculate()
       }, 500)
       return () => clearTimeout(timeoutId)
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate])
+    // Clear result when inputs become invalid
+    if (!canCalculate) {
+      setResult(null)
+      setError(null)
+    }
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate, canCalculate])
 
   const fetchTemplates = async () => {
     try {
@@ -138,7 +153,7 @@ export default function Calculator() {
   }
 
   const handleCalculate = useCallback(async () => {
-    if (!width || !height || !quantity) return
+    if (!canCalculate) return
 
     setLoading(true)
     setError(null)
@@ -163,7 +178,7 @@ export default function Calculator() {
     } finally {
       setLoading(false)
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pl-PL', {
@@ -218,7 +233,7 @@ export default function Calculator() {
               </label>
               <button
                 onClick={handleCalculate}
-                disabled={loading}
+                disabled={loading || !canCalculate}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {loading ? 'Obliczanie...' : 'Przelicz'}
@@ -301,8 +316,9 @@ export default function Calculator() {
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? 'text-gray-400' : ''}`}
               >
+                <option value="">Wybierz produkt...</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -491,8 +507,8 @@ export default function Calculator() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${component.type === 'MATERIAL'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : 'bg-orange-100 text-orange-800'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-orange-100 text-orange-800'
                                 }`}>
                                 {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
                               </span>
