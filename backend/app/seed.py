@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy import select
 
-from app.core.database import engine, Base, SessionLocal
+from app.core.database import SessionLocal
 from app.models.models import (
     Material,
     MaterialVariant,
@@ -18,8 +18,8 @@ from app.models.models import (
 
 async def seed():
     """Populate database with initial data. Idempotent — skips if data already exists."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # NOTE: Schema creation is handled by Alembic migrations (alembic upgrade head).
+    # This function only seeds data.
 
     async with SessionLocal() as session:
         # Check if data already exists

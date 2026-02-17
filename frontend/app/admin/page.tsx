@@ -418,7 +418,7 @@ export default function AdminPage() {
                                                             <p className="text-sm text-gray-500 mt-1">{m.description}</p>
                                                         )}
                                                         {m.variants.length > 0 && (
-                                                            <div className="mt-3 overflow-hidden rounded-lg border">
+                                                            <div className="mt-3 rounded-lg border">
                                                                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                                                                     <thead className="bg-gray-50">
                                                                         <tr>
@@ -515,7 +515,7 @@ export default function AdminPage() {
                                         <p className="text-gray-500">Brak procesów w bazie danych.</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-hidden bg-white rounded-xl shadow-sm border">
+                                    <div className="bg-white rounded-xl shadow-sm border">
                                         <table className="min-w-full divide-y divide-gray-200 text-sm">
                                             <thead className="bg-gray-50">
                                                 <tr>
