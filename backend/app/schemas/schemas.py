@@ -212,6 +212,7 @@ class CalculationResponse(BaseModel):
     overlap_used_cm: float
     client_view: List[Dict[str, Any]]
     tech_view: List[ComponentResult]
+    debug: List[str] = []
 
 
 # Quote Schemas

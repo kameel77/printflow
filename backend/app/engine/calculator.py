@@ -24,6 +24,12 @@ class PrintFlowEngine:
     
     def __init__(self, db_context: Dict):
         self.db = db_context
+        self.logs: List[str] = []
+    
+    def log(self, msg: str):
+        """Add log message"""
+        print(f"[CALC] {msg}")
+        self.logs.append(msg)
     
     def _q(self, val: Any) -> Decimal:
         """Convert to Decimal for financial precision"""
@@ -41,10 +47,12 @@ class PrintFlowEngine:
         """Calculate production dimensions including all margins"""
         w_net = self._q(req.width_cm)
         h_net = self._q(req.height_cm)
+        self.log(f"Wymiary netto: {w_net}x{h_net} cm")
         
         # Product margins
         p_margin_w = self._q(template.get('default_margin_w_cm', 0)) if template else Decimal("0")
         p_margin_h = self._q(template.get('default_margin_h_cm', 0)) if template else Decimal("0")
+        self.log(f"Spady produktu: {p_margin_w}x{p_margin_h} cm")
         
         # Max process margins
         max_proc_w = Decimal("0")
@@ -58,9 +66,11 @@ class PrintFlowEngine:
                         max_proc_w = max(max_proc_w, self._q(proc.get('margin_w_cm', 0)))
                         max_proc_h = max(max_proc_h, self._q(proc.get('margin_h_cm', 0)))
         
+        self.log(f"Max spady procesu: {max_proc_w}x{max_proc_h} cm")
         w_gross = w_net + (p_margin_w * 2) + (max_proc_w * 2)
         h_gross = h_net + (p_margin_h * 2) + (max_proc_h * 2)
         
+        self.log(f"Wymiary brutto (produkcyjne): {w_gross}x{h_gross} cm")
         return w_gross, h_gross
     
     def calculate_nesting_and_splitting(
@@ -75,6 +85,9 @@ class PrintFlowEngine:
         variants = self.db.get('material_variants', {}).get(material_id, [])
         best_v = None
         min_total_cost = Decimal("Infinity")
+        
+        
+        self.log(f"Szukanie materiału {material_id} dla wymiaru {w_g}x{h_g} cm, ilość: {qty}, zakładka: {overlap} cm")
         
         # Try both orientations to find the most efficient fit
         orientations = [(w_g, h_g)]
@@ -107,6 +120,10 @@ class PrintFlowEngine:
                 area_m2 = (v_width / 100) * (total_len_cm / 100)
                 cost = area_m2 * self._q(v['cost_price_per_unit'])
                 
+
+                
+                self.log(f"  War: {v.get('width_cm')}cm | Rotacja: {'TAK' if cur_w == h_g and cur_h == w_g and w_g != h_g else 'NIE'} | Bryty: {num_panels} | Odpad: {(((area_m2 - ((w_g*h_g/10000)*qty))/area_m2)*100):.1f}% | Koszt: {cost:.2f}")
+
                 if cost < min_total_cost:
                     min_total_cost = cost
                     best_v = {
@@ -132,6 +149,9 @@ class PrintFlowEngine:
             overlap = self._q(req.overlap_override_cm)
         else:
             overlap = self._q(template.get('default_overlap_cm', 2.0)) if template else Decimal("2.0")
+        
+        self.log(f"--- START KALKULACJI: {template.get('name') if template else 'Brak szablonu'} ---")
+        self.log(f"Zakładka przyjęta do kalkulacji: {overlap} cm")
         
         # Calculate gross dimensions
         w_g, h_g = self.resolve_gross_dimensions(req, template)
@@ -166,6 +186,7 @@ class PrintFlowEngine:
                     )
                 
                 # Update orientation based on the best fit found
+                self.log(f"Wybrano wariant: {res.get('width_cm')}cm, koszt: {res['cost']}")
                 is_split = res['num_p'] > 1
                 num_panels = res['num_p']
                 cur_w_g = res['used_w']
@@ -208,6 +229,8 @@ class PrintFlowEngine:
                 total_cost += cost
                 total_price += price
                 
+                self.log(f"Proces {proc['name']}: {p_qty:.2f} {proc.get('unit')} | Koszt: {cost:.2f} | Cena: {price:.2f}")
+
                 rotated_flag = cur_w_g == h_g and cur_h_g == w_g and w_g != h_g
                 rot_text = "tak" if rotated_flag else "nie"
 
@@ -237,5 +260,7 @@ class PrintFlowEngine:
                 "qty": req.quantity,
                 "total": self._money(total_price)
             }],
-            tech_view=tech_view
+            tech_view=tech_view,
+            debug=self.logs
         )
+

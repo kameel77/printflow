@@ -25,7 +25,9 @@ interface CalculationResult {
     unit: string
     price_net: number
     details: string
+    is_rotated?: boolean
   }>
+  debug?: string[]
 }
 
 interface Template {
@@ -173,6 +175,12 @@ export default function Calculator() {
 
       const response = await axios.post(`${API_URL}/calculate`, payload)
       setResult(response.data)
+
+      if (response.data.debug && Array.isArray(response.data.debug)) {
+        console.group('--- DEBUG KALKULACJI ---')
+        response.data.debug.forEach((log: string) => console.log(log))
+        console.groupEnd()
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Wystąpił błąd podczas kalkulacji')
     } finally {
