@@ -177,12 +177,35 @@ export default function Calculator() {
       setResult(response.data)
 
       if (response.data.debug && Array.isArray(response.data.debug)) {
-        console.group('--- DEBUG KALKULACJI ---')
-        response.data.debug.forEach((log: string) => console.log(log))
+        console.group('✅ KALKULACJA OK — logi silnika:')
+        response.data.debug.forEach((log: string) => console.log(`[CALC] ${log}`))
         console.groupEnd()
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Wystąpił błąd podczas kalkulacji')
+      const detail = err.response?.data?.detail
+
+      // Handle structured error with debug logs and traceback
+      if (detail && typeof detail === 'object' && detail.debug) {
+        console.group('🔴 BŁĄD KALKULACJI')
+        console.error('Komunikat:', detail.message)
+        if (detail.debug && Array.isArray(detail.debug)) {
+          console.group('[CALC] Logi silnika (do momentu błędu):')
+          detail.debug.forEach((log: string) => console.log(`[CALC] ${log}`))
+          console.groupEnd()
+        }
+        if (detail.traceback) {
+          console.group('Python Traceback:')
+          console.error(detail.traceback)
+          console.groupEnd()
+        }
+        console.groupEnd()
+        setError(detail.message || 'Wystąpił błąd podczas kalkulacji')
+      } else {
+        // Simple string error
+        const errorMsg = typeof detail === 'string' ? detail : 'Wystąpił błąd podczas kalkulacji'
+        console.error('Błąd kalkulacji:', errorMsg)
+        setError(errorMsg)
+      }
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 # Calculation endpoint — uses real database
+import traceback
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -119,7 +120,21 @@ async def calculate_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+        tb = traceback.format_exc()
+        # Try to get debug logs from the engine if it was created
+        debug_logs = []
+        try:
+            debug_logs = engine.logs
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": f"Calculation error: {str(e)}",
+                "debug": debug_logs,
+                "traceback": tb,
+            }
+        )
 
 
 @router.get("/templates")
