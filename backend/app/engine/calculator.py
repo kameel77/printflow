@@ -122,7 +122,7 @@ class PrintFlowEngine:
                 
 
                 
-                self.log(f"  War: {v.get('width_cm')}cm | Rotacja: {'TAK' if cur_w == h_g and cur_h == w_g and w_g != h_g else 'NIE'} | Bryty: {num_panels} | Odpad: {(((area_m2 - ((w_g*h_g/10000)*qty))/area_m2)*100):.1f}% | Koszt: {cost:.2f}")
+
 
                 if cost < min_total_cost:
                     min_total_cost = cost
