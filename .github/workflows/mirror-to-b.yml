@@ -28,16 +28,18 @@ jobs:
         env:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
         run: |
-          git remote add target https://x-access-token:${MIRROR_TOKEN}@github.com/wally-sklep/printflow.git
+          git remote add target https://${MIRROR_TOKEN}@github.com/wally-sklep/printflow.git
           git remote -v
 
-      - name: Push dev/staging branches
+      - name: Push to target
         run: |
-          # push tylko to, co chcesz mirrorować
-          git push target refs/heads/dev:refs/heads/dev --force
-          git push target refs/heads/staging:refs/heads/staging --force
-
-      - name: Push tags
-        run: |
-          # tagi (w tym te do release'ów)
-          git push target --tags --force
+          if [ "${{ github.ref_type }}" = "branch" ]; then
+            echo "Pushing branch ${{ github.ref_name }}..."
+            git push target HEAD:refs/heads/${{ github.ref_name }} --force
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "Pushing tag ${{ github.ref_name }}..."
+            git push target HEAD:refs/tags/${{ github.ref_name }} --force
+          else
+            echo "Manual dispatch, pushing branch ${{ github.ref_name }}..."
+            git push target HEAD:refs/heads/${{ github.ref_name }} --force
+          fi
