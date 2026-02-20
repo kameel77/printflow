@@ -24,11 +24,16 @@ jobs:
           git config user.name "mirror-bot"
           git config user.email "mirror-bot@users.noreply.github.com"
 
-      - name: Add target remote (repo B)
-        env:
-          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+      - name: Check if token is set
         run: |
-          git remote add target https://${MIRROR_TOKEN}@github.com/wally-sklep/printflow.git
+          if [ -z "${{ secrets.MIRROR_TOKEN }}" ]; then
+            echo "Error: MIRROR_TOKEN secret is empty or not set in the repository settings!"
+            exit 1
+          fi
+
+      - name: Add target remote (repo B)
+        run: |
+          git remote add target https://x-access-token:${{ secrets.MIRROR_TOKEN }}@github.com/wally-sklep/printflow.git
           git remote -v
 
       - name: Push to target
