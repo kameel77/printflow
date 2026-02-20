@@ -11,6 +11,7 @@ on:
 
 jobs:
   mirror:
+    if: github.repository == 'kameel77/printflow'
     runs-on: ubuntu-latest
 
     steps:
