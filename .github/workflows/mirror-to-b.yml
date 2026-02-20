@@ -33,7 +33,7 @@ jobs:
 
       - name: Add target remote (repo B)
         run: |
-          git remote add target https://x-access-token:${{ secrets.MIRROR_TOKEN }}@github.com/wally-sklep/printflow.git
+          git remote add target https://${{ secrets.MIRROR_TOKEN }}@github.com/wally-sklep/printflow.git
           git remote -v
 
       - name: Push to target
