@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printflow123}
       POSTGRES_DB: ${POSTGRES_DB:-printflow}
     volumes:
-      - postgres_data_fresh:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
       interval: 10s
@@ -47,7 +47,7 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       DEBUG: ${DEBUG:-true}
       ENVIRONMENT: ${ENVIRONMENT:-development}
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,7 +116,7 @@ services:
       - coolify
 
 volumes:
-  postgres_data_fresh:
+  postgres_data_v2:
     driver: local
   redis_data:
     driver: local
