@@ -1,0 +1,43 @@
+name: Mirror dev/staging and tags to repo B
+
+on:
+  push:
+    branches:
+      - dev
+      - staging
+    tags:
+      - "*"   # wszystkie tagi
+  workflow_dispatch: {}
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "mirror-bot"
+          git config user.email "mirror-bot@users.noreply.github.com"
+
+      - name: Add target remote (repo B)
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        run: |
+          git remote add target https://x-access-token:${MIRROR_TOKEN}@github.com/wally-sklep/printflow.git
+          git remote -v
+
+      - name: Push dev/staging branches
+        run: |
+          # push tylko to, co chcesz mirrorować
+          git push target refs/heads/dev:refs/heads/dev --force
+          git push target refs/heads/staging:refs/heads/staging --force
+
+      - name: Push tags
+        run: |
+          # tagi (w tym te do release'ów)
+          git push target --tags --force
