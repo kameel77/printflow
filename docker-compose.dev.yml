@@ -63,6 +63,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
     depends_on:
       - backend
+    healthcheck:
+      test: [ "NONE" ]
     networks:
       - printflow
       - coolify
@@ -86,6 +88,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
     depends_on:
       - backend
+    healthcheck:
+      test: [ "NONE" ]
     networks:
       - printflow
       - coolify
