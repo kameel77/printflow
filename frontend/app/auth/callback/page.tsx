@@ -12,6 +12,7 @@ function CallbackContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { login } = useAuth()
+    const [isPending, setIsPending] = useState(false)
 
     useEffect(() => {
         const code = searchParams.get('code')
@@ -37,9 +38,18 @@ function CallbackContent() {
                 router.push('/')
             } catch (err: unknown) {
                 console.error('[Auth] Login failed:', err)
+                if (axios.isAxiosError(err) && err.response?.status === 403) {
+                    const detail = err.response.data?.detail
+                    if (detail?.code === 'account_pending') {
+                        setIsPending(true)
+                        return
+                    }
+                }
                 const message =
                     axios.isAxiosError(err) && err.response?.data?.detail
-                        ? err.response.data.detail
+                        ? (typeof err.response.data.detail === 'string'
+                            ? err.response.data.detail
+                            : err.response.data.detail.message || 'Błąd logowania')
                         : axios.isAxiosError(err) && err.message
                             ? `Błąd połączenia: ${err.message}`
                             : 'Nie udało się zalogować. Spróbuj ponownie.'
@@ -49,6 +59,68 @@ function CallbackContent() {
 
         exchangeCode()
     }, [searchParams, login, router])
+
+    if (isPending) {
+        return (
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100vh',
+                background: '#0f172a',
+                fontFamily: 'Inter, sans-serif',
+            }}>
+                <div style={{
+                    background: 'rgba(30, 41, 59, 0.7)',
+                    backdropFilter: 'blur(20px)',
+                    borderRadius: 20,
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    padding: '48px 40px',
+                    maxWidth: 440,
+                    width: '100%',
+                    textAlign: 'center',
+                }}>
+                    <div style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 20px',
+                        fontSize: 28,
+                    }}>
+                        ⏳
+                    </div>
+                    <h2 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 600, margin: '0 0 12px' }}>
+                        Konto oczekuje na aktywację
+                    </h2>
+                    <p style={{ color: '#94a3b8', fontSize: 14, margin: '0 0 8px', lineHeight: 1.6 }}>
+                        Twoje konto zostało utworzone, ale wymaga aktywacji przez administratora.
+                    </p>
+                    <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 28px' }}>
+                        Skontaktuj się z administratorem systemu w celu uzyskania dostępu.
+                    </p>
+                    <button
+                        onClick={() => router.push('/auth/login')}
+                        style={{
+                            padding: '12px 24px',
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            color: '#93c5fd',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            borderRadius: 10,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Wróć do logowania
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
     if (error) {
         return (

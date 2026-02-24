@@ -1,7 +1,7 @@
 # Authentication endpoints — Google OAuth2
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
@@ -105,13 +105,17 @@ async def _find_or_create_user(db: AsyncSession, id_info: dict) -> User:
             if not user.full_name:
                 user.full_name = full_name
         else:
-            # Brand-new user
+            # Brand-new user — check if this is the very first user
+            count_result = await db.execute(select(func.count(User.id)))
+            user_count = count_result.scalar() or 0
+
+            is_first_user = user_count == 0
             user = User(
                 email=email,
                 full_name=full_name,
                 google_id=google_id,
-                role=UserRole.SALES,  # default role
-                is_active=True,
+                role=UserRole.ADMIN if is_first_user else UserRole.SALES,
+                is_active=is_first_user,  # first user auto-active, rest need approval
             )
             db.add(user)
 
@@ -134,7 +138,11 @@ async def google_auth(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is deactivated",
+            detail={
+                "code": "account_pending",
+                "message": "Twoje konto oczekuje na aktywację przez administratora.",
+                "email": user.email,
+            },
         )
 
     access_token = create_access_token(
