@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 import { Tooltip, LabelWithTooltip } from '../../components/Tooltip'
+import { useAuth } from '@/components/AuthProvider'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 // ────────── Types ──────────
 interface MaterialVariant {
@@ -82,6 +83,7 @@ type TabId = 'templates' | 'materials' | 'processes'
 
 // ────────── Main Component ──────────
 export default function AdminPage() {
+    const { user, logout } = useAuth()
     const [activeTab, setActiveTab] = useState<TabId>('templates')
     const [templates, setTemplates] = useState<Template[]>([])
     const [materials, setMaterials] = useState<Material[]>([])
@@ -228,15 +230,31 @@ export default function AdminPage() {
                             <h1 className="text-2xl font-bold text-gray-900">Panel Administracyjny</h1>
                             <p className="text-sm text-gray-500 mt-1">Zarządzanie szablonami, materiałami i procesami</p>
                         </div>
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            Kalkulator
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                Kalkulator
+                            </Link>
+                            {user && (
+                                <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
+                                    <span className="text-xs text-gray-500 hidden md:inline">{user.email}</span>
+                                    <button
+                                        onClick={logout}
+                                        className="text-sm text-gray-500 hover:text-red-600 transition-colors p-1"
+                                        title="Wyloguj"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
+import { useAuth } from '@/components/AuthProvider'
 
 interface CalculationResult {
   total_price_net: number
@@ -42,9 +43,10 @@ interface Template {
   }>
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 export default function Calculator() {
+  const { user, logout } = useAuth()
   // Input parameters
   const [width, setWidth] = useState<string>('')
   const [height, setHeight] = useState<string>('')
@@ -269,6 +271,20 @@ export default function Calculator() {
               >
                 {loading ? 'Obliczanie...' : 'Przelicz'}
               </button>
+              {user && (
+                <div className="flex items-center gap-2 ml-2 pl-4 border-l border-gray-200">
+                  <span className="text-xs text-gray-500 hidden md:inline">{user.email}</span>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-gray-500 hover:text-red-600 transition-colors p-1"
+                    title="Wyloguj"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
