@@ -184,10 +184,18 @@ services:
       dockerfile: Dockerfile
       args:
         BACKEND_URL: http://backend:8000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: printflow_frontend
     restart: unless-stopped
     expose:
       - 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      - "traefik.http.routers.frontend.entrypoints=http"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.yourdomain.com}
