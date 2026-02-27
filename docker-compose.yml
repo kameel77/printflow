@@ -172,7 +172,7 @@ services:
       - printflow_network
     command: >
       sh -c "
-        celery -A app.core.celery beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+        celery -A app.core.celery beat --loglevel=info
       "
 
   # Frontend (Next.js)
