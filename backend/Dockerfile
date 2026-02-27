@@ -9,19 +9,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for WeasyPrint and general usage
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
-    # WeasyPrint dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     libglib2.0-0 \
     libpango-1.0-0 \
-    libpangoft2-1.0-0 \
     libharfbuzz0b \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
     shared-mime-info \
-    # PostgreSQL client for health checks
     postgresql-client \
     curl \
-    # Build dependencies
     gcc \
     libc-dev \
     libpq-dev \
