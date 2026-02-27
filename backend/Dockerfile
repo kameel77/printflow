@@ -9,10 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for WeasyPrint and general usage
-RUN for i in 1 2 3; do \
-    apt-get update && apt-get install -y --no-install-recommends --fix-missing \
+RUN sed -i 's/deb.debian.org/ftp.de.debian.org/g' /etc/apt/sources.list && \
+    sed -i 's/security.debian.org/ftp.de.debian.org/g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libpango-1.0-0 \
+    libpangoft2-1.0-0 \
     libharfbuzz0b \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
@@ -22,8 +24,7 @@ RUN for i in 1 2 3; do \
     gcc \
     libc-dev \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/* && break || sleep 5; \
-    done
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
