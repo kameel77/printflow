@@ -1,5 +1,5 @@
 # Backend Dockerfile - FastAPI + Python 3.11
-FROM python:3.11-slim-bookworm
+FROM python:3.11-slim-bullseye
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
