@@ -44,7 +44,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: printflow_backend
     restart: unless-stopped
     working_dir: /app
@@ -114,7 +114,7 @@ services:
   celery_worker:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: printflow_celery_worker
     restart: unless-stopped
     working_dir: /app
@@ -151,7 +151,7 @@ services:
   celery_beat:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: printflow_celery_beat
     restart: unless-stopped
     working_dir: /app
