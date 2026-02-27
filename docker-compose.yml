@@ -50,11 +50,11 @@ services:
     working_dir: /app
     environment:
       # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
       # Redis
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       # Security
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
@@ -119,10 +119,10 @@ services:
     restart: unless-stopped
     working_dir: /app
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       GMAIL_CREDENTIALS_PATH: ${GMAIL_CREDENTIALS_PATH:-/app/credentials/gmail_credentials.json}
       GMAIL_TOKEN_PATH: ${GMAIL_TOKEN_PATH:-/app/credentials/gmail_token.json}
@@ -156,10 +156,10 @@ services:
     restart: unless-stopped
     working_dir: /app
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       GMAIL_CREDENTIALS_PATH: ${GMAIL_CREDENTIALS_PATH:-/app/credentials/gmail_credentials.json}
       GMAIL_TOKEN_PATH: ${GMAIL_TOKEN_PATH:-/app/credentials/gmail_token.json}
