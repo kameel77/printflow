@@ -2,6 +2,37 @@
 # Services: PostgreSQL, Redis, Backend (FastAPI), Frontend (Next.js)
 
 services:
+  # ─── PostgreSQL ───────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-printflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printflow123}
+      POSTGRES_DB: ${POSTGRES_DB:-printflow}
+    volumes:
+      - postgres_data_v7:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - printflow
+
+  # ─── Redis ────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - printflow
 
   # ─── Backend (FastAPI) ────────────────────────────────
   backend:
@@ -17,7 +48,11 @@ services:
       DEBUG: ${DEBUG:-true}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
-
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     expose:
       - "8000"
     healthcheck:
@@ -30,7 +65,13 @@ services:
       - printflow
       - coolify
     labels:
-      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.backend-printflow-custom.rule=Host(`${SERVICE_FQDN_BACKEND}`)"
+      - "traefik.http.routers.backend-printflow-custom.entrypoints=websecure"
+      - "traefik.http.routers.backend-printflow-custom.tls=true"
+      - "traefik.http.routers.backend-printflow-custom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend-printflow-custom.loadbalancer.server.port=8000"
     command: >
       sh -c "
         echo 'Wait 3s for DB/DNS...' && sleep 3 &&
@@ -42,56 +83,6 @@ services:
         exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
       "
 
-  # ─── Celery Worker ──────────────────────────────────
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-min-32-characters-long}
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      DEBUG: ${DEBUG:-true}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-    depends_on:
-      - backend
-    healthcheck:
-      test: [ "NONE" ]
-    networks:
-      - printflow
-      - coolify
-    command: >
-      sh -c "
-        celery -A app.core.celery worker --loglevel=info --concurrency=4
-      "
-
-  # ─── Celery Beat ────────────────────────────────────
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://printflow:printflow123@postgres:5432/printflow}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-min-32-characters-long}
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      DEBUG: ${DEBUG:-true}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-    depends_on:
-      - backend
-    healthcheck:
-      test: [ "NONE" ]
-    networks:
-      - printflow
-      - coolify
-    command: >
-      sh -c "
-        celery -A app.core.celery beat --loglevel=info
-      "
-
   # ─── Frontend (Next.js) ──────────────────────────────
   frontend:
     build:
@@ -99,7 +90,9 @@ services:
       dockerfile: Dockerfile
       args:
         BACKEND_URL: http://backend:8000
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -108,7 +101,13 @@ services:
     expose:
       - "3000"
     labels:
-      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.frontend-printflow-custom.rule=Host(`${SERVICE_FQDN_FRONTEND}`)"
+      - "traefik.http.routers.frontend-printflow-custom.entrypoints=websecure"
+      - "traefik.http.routers.frontend-printflow-custom.tls=true"
+      - "traefik.http.routers.frontend-printflow-custom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend-printflow-custom.loadbalancer.server.port=3000"
     depends_on:
       backend:
         condition: service_started
@@ -120,8 +119,11 @@ services:
       - coolify
 
 volumes:
-  certbot_data:
+  postgres_data_v7:
     driver: local
+  redis_data:
+    driver: local
+
 networks:
   printflow:
     driver: bridge
