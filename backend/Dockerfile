@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for WeasyPrint and general usage
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
+RUN for i in 1 2 3; do \
+    apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     libglib2.0-0 \
     libpango-1.0-0 \
     libharfbuzz0b \
@@ -21,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     gcc \
     libc-dev \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && break || sleep 5; \
+    done
 
 # Set working directory
 WORKDIR /app
