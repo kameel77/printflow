@@ -47,6 +47,7 @@ services:
       dockerfile: Dockerfile
     container_name: printflow_backend
     restart: unless-stopped
+    working_dir: /app
     environment:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
@@ -108,6 +109,7 @@ services:
       dockerfile: Dockerfile
     container_name: printflow_celery_worker
     restart: unless-stopped
+    working_dir: /app
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
       REDIS_URL: redis://redis:6379/0
@@ -145,6 +147,7 @@ services:
       dockerfile: Dockerfile
     container_name: printflow_celery_beat
     restart: unless-stopped
+    working_dir: /app
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-printflow}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-printflow}
       REDIS_URL: redis://redis:6379/0
