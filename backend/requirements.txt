@@ -16,6 +16,8 @@ redis>=5.0.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.17
+google-auth>=2.28.0
+google-auth-oauthlib>=1.2.0
 
 # Pydantic & Validation
 pydantic>=2.9.0

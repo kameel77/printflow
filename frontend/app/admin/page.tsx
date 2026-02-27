@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 import { Tooltip, LabelWithTooltip } from '../../components/Tooltip'
+import { useAuth } from '@/components/AuthProvider'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 // ────────── Types ──────────
 interface MaterialVariant {
@@ -77,17 +78,28 @@ interface Template {
     tooltip_overlap_cm?: string | null
 }
 
+interface UserItem {
+    id: number
+    email: string
+    full_name: string | null
+    role: string
+    is_active: boolean
+    google_id: string | null
+}
+
 // ────────── Tab types ──────────
-type TabId = 'templates' | 'materials' | 'processes'
+type TabId = 'templates' | 'materials' | 'processes' | 'users'
 
 // ────────── Main Component ──────────
 export default function AdminPage() {
+    const { user, logout } = useAuth()
     const [activeTab, setActiveTab] = useState<TabId>('templates')
     const [templates, setTemplates] = useState<Template[]>([])
     const [materials, setMaterials] = useState<Material[]>([])
     const [processes, setProcesses] = useState<ProcessItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [users, setUsers] = useState<UserItem[]>([])
 
     // Modal state — Templates
     const [showModal, setShowModal] = useState(false)
@@ -105,14 +117,18 @@ export default function AdminPage() {
         setLoading(true)
         setError(null)
         try {
-            const [tRes, mRes, pRes] = await Promise.all([
+            const token = localStorage.getItem('access_token')
+            const headers = token ? { Authorization: `Bearer ${token}` } : {}
+            const [tRes, mRes, pRes, uRes] = await Promise.all([
                 axios.get(`${API_URL}/templates`),
                 axios.get(`${API_URL}/materials`),
                 axios.get(`${API_URL}/processes`),
+                axios.get(`${API_URL}/users`, { headers }).catch(() => ({ data: [] })),
             ])
             setTemplates(tRes.data)
             setMaterials(mRes.data)
             setProcesses(pRes.data)
+            setUsers(uRes.data)
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Błąd ładowania danych')
         } finally {
@@ -212,10 +228,49 @@ export default function AdminPage() {
         }
     }
 
+    // ── User management ──
+    const handleToggleUserActive = async (userId: number, isActive: boolean) => {
+        try {
+            const token = localStorage.getItem('access_token')
+            await axios.patch(`${API_URL}/users/${userId}`, { is_active: isActive }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, is_active: isActive } : u))
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd aktualizacji')
+        }
+    }
+
+    const handleChangeUserRole = async (userId: number, role: string) => {
+        try {
+            const token = localStorage.getItem('access_token')
+            await axios.patch(`${API_URL}/users/${userId}`, { role }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role } : u))
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd aktualizacji')
+        }
+    }
+
+    const handleDeleteUser = async (userId: number) => {
+        if (!confirm('Czy na pewno chcesz usunąć tego użytkownika?')) return
+        try {
+            const token = localStorage.getItem('access_token')
+            await axios.delete(`${API_URL}/users/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            setUsers((prev) => prev.filter((u) => u.id !== userId))
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd usuwania')
+        }
+    }
+
     const tabs: { id: TabId; label: string; count: number }[] = [
         { id: 'templates', label: 'Szablony', count: templates.length },
         { id: 'materials', label: 'Materiały', count: materials.length },
         { id: 'processes', label: 'Procesy', count: processes.length },
+        { id: 'users', label: 'Użytkownicy', count: users.length },
     ]
 
     return (
@@ -228,15 +283,31 @@ export default function AdminPage() {
                             <h1 className="text-2xl font-bold text-gray-900">Panel Administracyjny</h1>
                             <p className="text-sm text-gray-500 mt-1">Zarządzanie szablonami, materiałami i procesami</p>
                         </div>
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            Kalkulator
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                Kalkulator
+                            </Link>
+                            {user && (
+                                <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
+                                    <span className="text-xs text-gray-500 hidden md:inline">{user.email}</span>
+                                    <button
+                                        onClick={logout}
+                                        className="text-sm text-gray-500 hover:text-red-600 transition-colors p-1"
+                                        title="Wyloguj"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -626,6 +697,82 @@ export default function AdminPage() {
                                                                     </svg>
                                                                 </button>
                                                             </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Users Tab */}
+                        {activeTab === 'users' && (
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-900">Użytkownicy</h2>
+                                </div>
+
+                                {users.length === 0 ? (
+                                    <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
+                                        <p className="text-gray-500">Brak użytkowników w systemie.</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-xl shadow-sm border">
+                                        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Użytkownik</th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Rola</th>
+                                                    <th className="px-6 py-3 text-left font-medium text-gray-500">Status</th>
+                                                    <th className="px-6 py-3 text-right font-medium text-gray-500">Akcje</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {users.map((u) => (
+                                                    <tr key={u.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">{u.full_name || '—'}</p>
+                                                                <p className="text-gray-500 text-xs">{u.email}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <select
+                                                                value={u.role}
+                                                                onChange={(e) => handleChangeUserRole(u.id, e.target.value)}
+                                                                disabled={u.id === user?.id}
+                                                                className="px-2 py-1 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                                                            >
+                                                                <option value="admin">Admin</option>
+                                                                <option value="sales">Sales</option>
+                                                                <option value="production">Production</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <button
+                                                                onClick={() => handleToggleUserActive(u.id, !u.is_active)}
+                                                                disabled={u.id === user?.id}
+                                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${u.is_active
+                                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                            >
+                                                                {u.is_active ? 'Aktywny' : 'Nieaktywny'}
+                                                            </button>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <button
+                                                                onClick={() => handleDeleteUser(u.id)}
+                                                                disabled={u.id === user?.id}
+                                                                className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                title="Usuń"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))}

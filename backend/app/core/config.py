@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/callback"
+    
     # CORS — comma-separated string, e.g. "https://app.example.com,http://localhost:3000"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
