@@ -80,6 +80,8 @@ services:
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
+    expose:
+      - 8000
     # ports:
     #   - "127.0.0.1:8000:8000"
     depends_on:
@@ -180,8 +182,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://backend:8000
     container_name: printflow_frontend
     restart: unless-stopped
+    expose:
+      - 3000
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.yourdomain.com}
