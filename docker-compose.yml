@@ -74,7 +74,6 @@ services:
       FOLLOW_UP_DAYS: ${FOLLOW_UP_DAYS:-3}
       MAX_FOLLOW_UPS: ${MAX_FOLLOW_UPS:-2}
     volumes:
-      - ./backend:/app
       - ./credentials:/app/credentials:ro
       - pdf_storage:/app/storage/pdfs
       - type: bind
@@ -122,7 +121,6 @@ services:
       FOLLOW_UP_DAYS: ${FOLLOW_UP_DAYS:-3}
       MAX_FOLLOW_UPS: ${MAX_FOLLOW_UPS:-2}
     volumes:
-      - ./backend:/app
       - ./credentials:/app/credentials:ro
       - pdf_storage:/app/storage/pdfs
       - type: bind
@@ -160,7 +158,6 @@ services:
       FOLLOW_UP_DAYS: ${FOLLOW_UP_DAYS:-3}
       MAX_FOLLOW_UPS: ${MAX_FOLLOW_UPS:-2}
     volumes:
-      - ./backend:/app
       - ./credentials:/app/credentials:ro
       - pdf_storage:/app/storage/pdfs
       - type: bind
