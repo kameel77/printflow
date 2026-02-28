@@ -1,40 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: printflow_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-printflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-printflow}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    # ports:
-    #   - "127.0.0.1:5432:5432"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis for Celery task queue and caching
-  redis:
-    image: redis:7-alpine
-    container_name: printflow_redis
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    # ports:
-    #   - "127.0.0.1:6379:6379"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # Backend API (FastAPI)
   backend:
@@ -80,17 +46,15 @@ services:
       - 8000
     # ports:
     #   - "127.0.0.1:8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - coolify
     command: >
       sh -c "
         alembic upgrade head &&
@@ -123,14 +87,13 @@ services:
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
-    depends_on:
-      - postgres
-      - redis
-      - backend
+
     command: >
       sh -c "
         celery -A app.core.celery worker --loglevel=info --concurrency=4
       "
+    networks:
+      - coolify
 
   # Celery Beat for scheduled tasks
   celery_beat:
@@ -158,14 +121,13 @@ services:
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
-    depends_on:
-      - postgres
-      - redis
-      - backend
+
     command: >
       sh -c "
         celery -A app.core.celery beat --loglevel=info
       "
+    networks:
+      - coolify
 
   # Frontend (Next.js)
   frontend:
@@ -190,37 +152,12 @@ services:
       - backend
     healthcheck:
       test: [ "NONE" ]
+    networks:
+      - coolify
 
-  # Database backup service
-  backup:
-    image: postgres:15-alpine
-    container_name: printflow_backup
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-printflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-printflow}
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data:ro
-      - ./backups:/backups
-      - type: bind
-        source: /etc/localtime
-        target: /etc/localtime
-        read_only: true
-    depends_on:
-      - postgres
-    command: >
-      sh -c "
-        apk add --no-cache tzdata &&
-        echo '0 3 * * * PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h postgres -U $$POSTGRES_USER $$POSTGRES_DB | gzip > /backups/printflow_$$(date +\%Y\%m\%d_\%H\%M\%S).sql.gz && find /backups -name "*.sql.gz" -mtime +$$BACKUP_RETENTION_DAYS -delete' | crontab - &&
-        crond -f -l 2
-      "
-
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
   pdf_storage:
     driver: local
+
+networks:
+  coolify:
+    external: true
