@@ -3,6 +3,7 @@ name: Mirror dev/staging and tags to repo B
 on:
   push:
     branches:
+      - main
       - dev
       - staging
     tags:
