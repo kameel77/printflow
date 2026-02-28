@@ -75,7 +75,7 @@ async def update_user(
 
     if body.role is not None:
         try:
-            user.role = UserRole(body.role)
+            user.role = UserRole(body.role.upper())
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
