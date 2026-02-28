@@ -266,12 +266,14 @@ export default function AdminPage() {
         }
     }
 
-    const tabs: { id: TabId; label: string; count: number }[] = [
+    const allTabs: { id: TabId; label: string; count: number }[] = [
         { id: 'templates', label: 'Szablony', count: templates.length },
         { id: 'materials', label: 'Materiały', count: materials.length },
         { id: 'processes', label: 'Procesy', count: processes.length },
         { id: 'users', label: 'Użytkownicy', count: users.length },
     ]
+
+    const tabs = allTabs.filter(tab => tab.id !== 'users' || user?.role === 'ADMIN')
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -755,8 +757,8 @@ export default function AdminPage() {
                                                                 onClick={() => handleToggleUserActive(u.id, !u.is_active)}
                                                                 disabled={u.id === user?.id}
                                                                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${u.is_active
-                                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                                                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                                    : 'bg-red-100 text-red-800 hover:bg-red-200'
                                                                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                                                             >
                                                                 {u.is_active ? 'Aktywny' : 'Nieaktywny'}
