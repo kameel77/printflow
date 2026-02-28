@@ -2,38 +2,6 @@
 # Services: PostgreSQL, Redis, Backend (FastAPI), Frontend (Next.js)
 
 services:
-  # ─── PostgreSQL ───────────────────────────────────────
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-printflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printflow123}
-      POSTGRES_DB: ${POSTGRES_DB:-printflow}
-    volumes:
-      - postgres_data_v7:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printflow}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - printflow
-
-  # ─── Redis ────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - printflow
-
   # ─── Backend (FastAPI) ────────────────────────────────
   backend:
     build:
@@ -48,11 +16,7 @@ services:
       DEBUG: ${DEBUG:-true}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+
     expose:
       - "8000"
     healthcheck:
@@ -62,7 +26,7 @@ services:
       retries: 5
       start_period: 120s
     networks:
-      - printflow
+      - coolify
     command: >
       sh -c "
         echo 'Wait 3s for DB/DNS...' && sleep 3 &&
@@ -98,17 +62,8 @@ services:
     healthcheck:
       test: [ "NONE" ]
     networks:
-      - printflow
       - coolify
 
-volumes:
-  postgres_data_v7:
-    driver: local
-  redis_data:
-    driver: local
-
 networks:
-  printflow:
-    driver: bridge
   coolify:
     external: true
