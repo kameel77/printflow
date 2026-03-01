@@ -53,6 +53,60 @@ async def create_material(
     return db_material
 
 
+@router.post("/bulk", response_model=List[MaterialResponse], status_code=201)
+async def bulk_import_materials(
+    materials: List[MaterialCreate],
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk import materials, updating existing ones based on external_id"""
+    result_materials = []
+    
+    for m_data in materials:
+        db_material = None
+        if m_data.external_id:
+            result = await db.execute(
+                select(Material)
+                .options(selectinload(Material.variants))
+                .where(Material.external_id == m_data.external_id)
+            )
+            db_material = result.scalar_one_or_none()
+            
+        if db_material:
+            # Update existing material
+            db_material.name = m_data.name
+            db_material.category = m_data.category
+            db_material.description = m_data.description
+            
+            existing_variants = {v.external_id: v for v in db_material.variants if v.external_id}
+            
+            for v_data in m_data.variants:
+                if v_data.external_id and v_data.external_id in existing_variants:
+                    ev = existing_variants[v_data.external_id]
+                    for key, value in v_data.model_dump(exclude_unset=True).items():
+                        setattr(ev, key, value)
+                else:
+                    db_material.variants.append(MaterialVariant(**v_data.model_dump()))
+        else:
+            # Create new material
+            db_material = Material(
+                name=m_data.name,
+                external_id=m_data.external_id,
+                category=m_data.category,
+                description=m_data.description,
+            )
+            for v_data in m_data.variants:
+                db_material.variants.append(MaterialVariant(**v_data.model_dump()))
+            db.add(db_material)
+            
+        result_materials.append(db_material)
+        
+    await db.flush()
+    for m in result_materials:
+        await db.refresh(m, ["variants"])
+    
+    return result_materials
+
+
 @router.get("/{material_id}", response_model=MaterialResponse)
 async def get_material(
     material_id: int,

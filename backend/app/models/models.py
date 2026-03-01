@@ -33,11 +33,15 @@ class Material(Base):
     __tablename__ = "materials"
     
     id = Column(Integer, primary_key=True, index=True)
+    external_id = Column(String(255), unique=True, index=True, nullable=True)
     name = Column(String(255), nullable=False)
     category = Column(String(100))
     description = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Tooltips
+    tooltip_external_id = Column(String(500))
     
     variants = relationship("MaterialVariant", back_populates="material", cascade="all, delete-orphan")
 
@@ -46,6 +50,7 @@ class MaterialVariant(Base):
     __tablename__ = "material_variants"
     
     id = Column(Integer, primary_key=True, index=True)
+    external_id = Column(String(255), unique=True, index=True, nullable=True)
     material_id = Column(Integer, ForeignKey("materials.id", ondelete="CASCADE"))
     width_cm = Column(Numeric(10, 2))
     length_cm = Column(Numeric(10, 2))
@@ -57,6 +62,7 @@ class MaterialVariant(Base):
     is_active = Column(Boolean, default=True)
     
     # Tooltips
+    tooltip_external_id = Column(String(500))
     tooltip_margin_w_cm = Column(String(500))
     tooltip_margin_h_cm = Column(String(500))
     tooltip_markup_percentage = Column(String(500))

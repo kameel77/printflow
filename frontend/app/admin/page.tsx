@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
+import Papa from 'papaparse'
 import Link from 'next/link'
 import { Tooltip, LabelWithTooltip } from '../../components/Tooltip'
 import { useAuth } from '@/components/AuthProvider'
@@ -12,6 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 interface MaterialVariant {
     id?: number
     material_id?: number
+    external_id?: string | null
     width_cm: number | null
     length_cm?: number | null
     cost_price_per_unit: number
@@ -23,10 +25,13 @@ interface MaterialVariant {
     tooltip_margin_w_cm?: string | null
     tooltip_margin_h_cm?: string | null
     tooltip_markup_percentage?: string | null
+    tooltip_external_id?: string | null
 }
 
 interface Material {
     id: number
+    external_id?: string | null
+    tooltip_external_id?: string | null
     name: string
     category: string | null
     description: string | null
@@ -107,6 +112,7 @@ export default function AdminPage() {
 
     // Modal state — Materials
     const [showMaterialModal, setShowMaterialModal] = useState(false)
+    const [showMaterialCSVModal, setShowMaterialCSVModal] = useState(false)
     const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
 
     // Modal state — Processes
@@ -458,15 +464,26 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Materiały</h2>
-                                    <button
-                                        onClick={openCreateMaterial}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj materiał
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setShowMaterialCSVModal(true)}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                            </svg>
+                                            Import z CSV
+                                        </button>
+                                        <button
+                                            onClick={openCreateMaterial}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Dodaj materiał
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {materials.length === 0 ? (
@@ -808,6 +825,17 @@ export default function AdminPage() {
                 />
             )}
 
+            {/* Material CSV Import Modal */}
+            {showMaterialCSVModal && (
+                <MaterialCSVImportModal
+                    onClose={() => setShowMaterialCSVModal(false)}
+                    onSuccess={() => {
+                        setShowMaterialCSVModal(false)
+                        fetchAll()
+                    }}
+                />
+            )}
+
             {/* Process Create/Edit Modal */}
             {showProcessModal && (
                 <ProcessModal
@@ -1102,7 +1130,10 @@ function MaterialModal({
     const [name, setName] = useState(material?.name || '')
     const [category, setCategory] = useState(material?.category || '')
     const [description, setDescription] = useState(material?.description || '')
+    const [externalId, setExternalId] = useState(material?.external_id || '')
+    const [tooltipExternalId, setTooltipExternalId] = useState(material?.tooltip_external_id || '')
     const [variants, setVariants] = useState<{
+        external_id: string
         width_cm: string
         length_cm: string
         cost_price_per_unit: string
@@ -1114,8 +1145,10 @@ function MaterialModal({
         tooltip_markup_percentage: string
         tooltip_margin_w_cm: string
         tooltip_margin_h_cm: string
+        tooltip_external_id: string
     }[]>(
         material?.variants.map((v) => ({
+            external_id: v.external_id || '',
             width_cm: v.width_cm != null ? String(v.width_cm) : '',
             length_cm: v.length_cm != null ? String(v.length_cm) : '',
             cost_price_per_unit: String(Number(v.cost_price_per_unit)),
@@ -1127,12 +1160,13 @@ function MaterialModal({
             tooltip_markup_percentage: v.tooltip_markup_percentage || '',
             tooltip_margin_w_cm: v.tooltip_margin_w_cm || '',
             tooltip_margin_h_cm: v.tooltip_margin_h_cm || '',
-        })) || [{ width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }]
+            tooltip_external_id: v.tooltip_external_id || '',
+        })) || [{ external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }]
     )
     const [saving, setSaving] = useState(false)
 
     const addVariant = () => {
-        setVariants((prev) => [...prev, { width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }])
+        setVariants((prev) => [...prev, { external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }])
     }
 
     const removeVariant = (index: number) => {
@@ -1148,9 +1182,12 @@ function MaterialModal({
         setSaving(true)
         const payload = {
             name,
+            external_id: externalId || null,
+            tooltip_external_id: tooltipExternalId || null,
             category: category || null,
             description: description || null,
             variants: variants.map((v) => ({
+                external_id: v.external_id || null,
                 width_cm: v.width_cm ? parseFloat(v.width_cm) : null,
                 length_cm: v.length_cm ? parseFloat(v.length_cm) : null,
                 cost_price_per_unit: parseFloat(v.cost_price_per_unit),
@@ -1162,6 +1199,7 @@ function MaterialModal({
                 tooltip_markup_percentage: v.tooltip_markup_percentage || null,
                 tooltip_margin_w_cm: v.tooltip_margin_w_cm || null,
                 tooltip_margin_h_cm: v.tooltip_margin_h_cm || null,
+                tooltip_external_id: v.tooltip_external_id || null,
             })),
         }
         await onSave(payload)
@@ -1186,20 +1224,33 @@ function MaterialModal({
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Basic info */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa *</label>
                             <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} placeholder="np. Papier Lateksowy" />
                         </div>
-                        <div>
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Kategoria</label>
                             <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass} placeholder="np. Papier" />
+                        </div>
+                        <div className="col-span-1">
+                            <LabelWithTooltip label="Materiał ID" tooltipText={tooltipExternalId || undefined} labelClassName="text-sm font-medium text-gray-700">
+                                <input type="text" value={externalId} onChange={(e) => setExternalId(e.target.value.trim())} className={inputClass} placeholder="np. 311891756 " />
+                            </LabelWithTooltip>
                         </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
                         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={inputClass} placeholder="Opcjonalny opis" />
                     </div>
+
+                    <details className="text-xs">
+                        <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">Tooltipy (opisy pól) dla Materiału</summary>
+                        <div className="mt-2 text-left">
+                            <label className="block text-xs text-gray-500 mb-1">Tooltip: Materiał ID</label>
+                            <input type="text" value={tooltipExternalId} onChange={(e) => setTooltipExternalId(e.target.value)} className={inputClass} placeholder="Opis pola Materiał ID..." />
+                        </div>
+                    </details>
 
                     {/* Variants */}
                     <div>
@@ -1213,15 +1264,20 @@ function MaterialModal({
 
                         {variants.map((v, index) => (
                             <div key={index} className="p-4 bg-gray-50 rounded-lg mb-3 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-gray-500">Wariant {index + 1}</span>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="block text-sm font-medium text-gray-700">Wariant {index + 1}</span>
                                     {variants.length > 1 && (
                                         <button type="button" onClick={() => removeVariant(index)} className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-4 gap-3">
+                                <div className="grid grid-cols-5 gap-3">
+                                    <div className="col-span-2">
+                                        <LabelWithTooltip label="Wariant ID" tooltipText={v.tooltip_external_id || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                            <input type="text" value={v.external_id} onChange={(e) => updateVariant(index, 'external_id', e.target.value.trim())} className={inputClass} placeholder="np. 00001" />
+                                        </LabelWithTooltip>
+                                    </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Szer. (cm)</label>
                                         <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
@@ -1231,7 +1287,7 @@ function MaterialModal({
                                         <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined}>
+                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
@@ -1243,20 +1299,18 @@ function MaterialModal({
                                             <option value="szt">szt</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-3">
                                     <div>
-                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined}>
+                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined}>
+                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div className="col-span-2 flex items-end">
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                             <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             Aktywny
                                         </label>
@@ -1265,7 +1319,11 @@ function MaterialModal({
                                 {/* Tooltip fields */}
                                 <details className="text-xs">
                                     <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">Tooltipy (opisy pól)</summary>
-                                    <div className="grid grid-cols-3 gap-3 mt-2">
+                                    <div className="grid grid-cols-2 gap-3 mt-2">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Tooltip: Wariant ID</label>
+                                            <input type="text" value={v.tooltip_external_id} onChange={(e) => updateVariant(index, 'tooltip_external_id', e.target.value)} className={inputClass} placeholder="Opis Wariant ID..." />
+                                        </div>
                                         <div>
                                             <label className="block text-xs text-gray-500 mb-1">Tooltip: Narzut</label>
                                             <input type="text" value={v.tooltip_markup_percentage} onChange={(e) => updateVariant(index, 'tooltip_markup_percentage', e.target.value)} className={inputClass} placeholder="Opis narzutu..." />
@@ -1456,6 +1514,215 @@ function ProcessModal({
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    )
+}
+
+// ────────── Material CSV Import Modal ──────────
+function MaterialCSVImportModal({
+    onClose,
+    onSuccess,
+}: {
+    onClose: () => void
+    onSuccess: () => void
+}) {
+    const [file, setFile] = useState<File | null>(null)
+    const [parsedData, setParsedData] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setFile(e.target.files[0])
+            parseCSV(e.target.files[0])
+        }
+    }
+
+    const parseCSV = (file: File) => {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                setParsedData(results.data)
+                setError(null)
+            },
+            error: (err) => {
+                setError('Błąd parsowania pliku: ' + err.message)
+            }
+        })
+    }
+
+    const handleImport = async () => {
+        if (parsedData.length === 0) return
+        setLoading(true)
+        setError(null)
+
+        try {
+            // Group rows by Material ID or Name
+            const materialsMap = new Map<string, any>()
+
+            for (const row of parsedData) {
+                const matId = row['Material ID']?.trim()
+                const name = row['Nazwa']?.trim()
+                if (!name) continue // Skip invalid
+
+                const groupKey = matId || name
+                if (!materialsMap.has(groupKey)) {
+                    materialsMap.set(groupKey, {
+                        external_id: matId || null,
+                        name: name,
+                        category: row['Kategoria']?.trim() || null,
+                        description: row['Opis']?.trim() || null,
+                        variants: []
+                    })
+                }
+
+                // Add variant
+                const costPrice = parseFloat(row['Cena Zakupu']?.replace(',', '.'))
+                if (isNaN(costPrice)) continue // Skip if no price
+
+                materialsMap.get(groupKey).variants.push({
+                    external_id: row['Variant ID']?.trim() || null,
+                    width_cm: row['Szerokość'] ? parseFloat(row['Szerokość'].replace(',', '.')) : null,
+                    length_cm: row['Długość'] ? parseFloat(row['Długość'].replace(',', '.')) : null,
+                    cost_price_per_unit: costPrice,
+                    unit: row['Jednostka']?.trim() || 'm2',
+                    markup_percentage: row['Narzut %'] ? parseFloat(row['Narzut %'].replace(',', '.')) : 0,
+                    margin_w_cm: row['Margines W'] ? parseFloat(row['Margines W'].replace(',', '.')) : 0,
+                    margin_h_cm: row['Margines H'] ? parseFloat(row['Margines H'].replace(',', '.')) : 0,
+                    is_active: true
+                })
+            }
+
+            const payload = Array.from(materialsMap.values())
+
+            const token = localStorage.getItem('access_token')
+            await axios.post(`${API_URL}/materials/bulk`, payload, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            onSuccess()
+        } catch (err: any) {
+            setError(err.response?.data?.detail || 'Błąd podczas importu. Sprawdź format danych.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const downloadTemplate = () => {
+        const headers = ['Material ID', 'Variant ID', 'Nazwa', 'Kategoria', 'Opis', 'Szerokość', 'Długość', 'Cena Zakupu', 'Jednostka', 'Narzut %', 'Margines W', 'Margines H']
+        const csv = Papa.unparse({ fields: headers, data: [] })
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.setAttribute('download', 'szablon_materiały.csv')
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center bg-black/50 p-4 sm:p-6 overflow-y-auto">
+            <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl flex flex-col my-auto max-h-[90vh]">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+                    <h2 className="text-xl font-semibold text-gray-900">Import Materiałów z CSV</h2>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                    {error && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="mb-6 flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div>
+                            <h3 className="font-medium text-blue-900 mb-1">Instrukcja </h3>
+                            <p className="text-sm text-blue-700">Wgraj plik CSV. Kolumny &quot;Nazwa&quot;, &quot;Cena Zakupu&quot; i &quot;Jednostka&quot; (np. m2, mb, pcs) są wymagane. &quot;Material ID&quot; i &quot;Variant ID&quot; służą do aktualizacji i grupowań.</p>
+                        </div>
+                        <button onClick={downloadTemplate} className="shrink-0 px-3 py-1.5 text-sm bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                            Pobierz szablon
+                        </button>
+                    </div>
+
+                    <div className="mb-6 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="pointer-events-none">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p className="mt-2 text-sm font-medium text-gray-900">
+                                {file ? file.name : "Kliknij lub przeciągnij plik CSV tutaj"}
+                            </p>
+                            {!file && <p className="text-xs text-gray-500 mt-1">Maksymalny rozmiar: 10MB</p>}
+                        </div>
+                    </div>
+
+                    {parsedData.length > 0 && (
+                        <div>
+                            <h3 className="font-medium text-gray-900 mb-3">Podgląd danych ({parsedData.length} wierszy)</h3>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            {Object.keys(parsedData[0]).slice(0, 6).map((key) => (
+                                                <th key={key} className="px-4 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{key}</th>
+                                            ))}
+                                            {Object.keys(parsedData[0]).length > 6 && <th className="px-4 py-2 text-left font-medium text-gray-500">...</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                        {parsedData.slice(0, 5).map((row, i) => (
+                                            <tr key={i}>
+                                                {Object.values(row).slice(0, 6).map((val: any, j) => (
+                                                    <td key={j} className="px-4 py-2 text-gray-900 truncate max-w-[150px]">{val}</td>
+                                                ))}
+                                                {Object.keys(row).length > 6 && <td className="px-4 py-2 text-gray-400">...</td>}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {parsedData.length > 5 && (
+                                <p className="text-xs text-gray-500 mt-2 text-center">Pokazano 5 pierwszych wierszy.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                        Anuluj
+                    </button>
+                    <button
+                        onClick={handleImport}
+                        disabled={loading || parsedData.length === 0}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                        {loading && (
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        )}
+                        Potwierdź import
+                    </button>
+                </div>
             </div>
         </div>
     )
