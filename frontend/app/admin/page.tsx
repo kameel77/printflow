@@ -1264,8 +1264,8 @@ function MaterialModal({
 
                         {variants.map((v, index) => (
                             <div key={index} className="p-4 bg-gray-50 rounded-lg mb-3 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-gray-500">Wariant {index + 1}</span>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="block text-sm font-medium text-gray-700">Wariant {index + 1}</span>
                                     {variants.length > 1 && (
                                         <button type="button" onClick={() => removeVariant(index)} className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1299,8 +1299,6 @@ function MaterialModal({
                                             <option value="szt">szt</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-4 gap-3">
                                     <div>
                                         <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
@@ -1312,7 +1310,7 @@ function MaterialModal({
                                         </LabelWithTooltip>
                                     </div>
                                     <div className="col-span-2 flex items-end">
-                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                             <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             Aktywny
                                         </label>
