@@ -1224,20 +1224,20 @@ function MaterialModal({
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Basic info */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nazwa *</label>
                             <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} placeholder="np. Papier Lateksowy" />
                         </div>
-                        <div>
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Kategoria</label>
                             <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass} placeholder="np. Papier" />
                         </div>
-                    </div>
-                    <div>
-                        <LabelWithTooltip label="Materiał ID" tooltipText={tooltipExternalId || undefined}>
-                            <input type="text" value={externalId} onChange={(e) => setExternalId(e.target.value.trim())} className={inputClass} placeholder="np. 311891756 " />
-                        </LabelWithTooltip>
+                        <div className="col-span-1">
+                            <LabelWithTooltip label="Materiał ID" tooltipText={tooltipExternalId || undefined} labelClassName="text-sm font-medium text-gray-700">
+                                <input type="text" value={externalId} onChange={(e) => setExternalId(e.target.value.trim())} className={inputClass} placeholder="np. 311891756 " />
+                            </LabelWithTooltip>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
@@ -1274,7 +1274,7 @@ function MaterialModal({
                                 </div>
                                 <div className="grid grid-cols-5 gap-3">
                                     <div className="col-span-2">
-                                        <LabelWithTooltip label="Wariant ID" tooltipText={v.tooltip_external_id || undefined}>
+                                        <LabelWithTooltip label="Wariant ID" tooltipText={v.tooltip_external_id || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="text" value={v.external_id} onChange={(e) => updateVariant(index, 'external_id', e.target.value.trim())} className={inputClass} placeholder="np. 00001" />
                                         </LabelWithTooltip>
                                     </div>
@@ -1287,7 +1287,7 @@ function MaterialModal({
                                         <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined}>
+                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
@@ -1302,12 +1302,12 @@ function MaterialModal({
                                 </div>
                                 <div className="grid grid-cols-4 gap-3">
                                     <div>
-                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined}>
+                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined}>
+                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>

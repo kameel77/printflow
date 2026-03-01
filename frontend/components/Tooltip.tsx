@@ -61,12 +61,13 @@ interface LabelWithTooltipProps {
     tooltipText: string | null | undefined
     required?: boolean
     children: React.ReactNode
+    labelClassName?: string
 }
 
-export function LabelWithTooltip({ label, tooltipText, required, children }: LabelWithTooltipProps) {
+export function LabelWithTooltip({ label, tooltipText, required, children, labelClassName = "text-sm font-medium text-gray-700" }: LabelWithTooltipProps) {
     return (
         <label className="block">
-            <span className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+            <span className={`flex items-center gap-1 mb-1 ${labelClassName}`}>
                 {label}
                 {required && <span className="text-red-500">*</span>}
                 {tooltipText && (
