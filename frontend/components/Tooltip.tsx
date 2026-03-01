@@ -45,7 +45,7 @@ export function Tooltip({ text, position = 'top', children }: TooltipProps) {
             </div>
             {isVisible && (
                 <div
-                    className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg whitespace-pre-wrap max-w-xs ${positionClasses[position]}`}
+                    className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg whitespace-pre-wrap max-w-sm ${positionClasses[position]}`}
                     role="tooltip"
                 >
                     {text}
@@ -61,12 +61,13 @@ interface LabelWithTooltipProps {
     tooltipText: string | null | undefined
     required?: boolean
     children: React.ReactNode
+    labelClassName?: string
 }
 
-export function LabelWithTooltip({ label, tooltipText, required, children }: LabelWithTooltipProps) {
+export function LabelWithTooltip({ label, tooltipText, required, children, labelClassName = "text-sm font-medium text-gray-700" }: LabelWithTooltipProps) {
     return (
         <label className="block">
-            <span className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+            <span className={`flex items-center gap-1 mb-1 ${labelClassName}`}>
                 {label}
                 {required && <span className="text-red-500">*</span>}
                 {tooltipText && (
