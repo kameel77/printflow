@@ -13,6 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 interface MaterialVariant {
     id?: number
     material_id?: number
+    external_id?: string | null
     width_cm: number | null
     length_cm?: number | null
     cost_price_per_unit: number
@@ -28,6 +29,7 @@ interface MaterialVariant {
 
 interface Material {
     id: number
+    external_id?: string | null
     name: string
     category: string | null
     description: string | null
@@ -1126,7 +1128,9 @@ function MaterialModal({
     const [name, setName] = useState(material?.name || '')
     const [category, setCategory] = useState(material?.category || '')
     const [description, setDescription] = useState(material?.description || '')
+    const [externalId, setExternalId] = useState(material?.external_id || '')
     const [variants, setVariants] = useState<{
+        external_id: string
         width_cm: string
         length_cm: string
         cost_price_per_unit: string
@@ -1140,6 +1144,7 @@ function MaterialModal({
         tooltip_margin_h_cm: string
     }[]>(
         material?.variants.map((v) => ({
+            external_id: v.external_id || '',
             width_cm: v.width_cm != null ? String(v.width_cm) : '',
             length_cm: v.length_cm != null ? String(v.length_cm) : '',
             cost_price_per_unit: String(Number(v.cost_price_per_unit)),
@@ -1151,12 +1156,12 @@ function MaterialModal({
             tooltip_markup_percentage: v.tooltip_markup_percentage || '',
             tooltip_margin_w_cm: v.tooltip_margin_w_cm || '',
             tooltip_margin_h_cm: v.tooltip_margin_h_cm || '',
-        })) || [{ width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }]
+        })) || [{ external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }]
     )
     const [saving, setSaving] = useState(false)
 
     const addVariant = () => {
-        setVariants((prev) => [...prev, { width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }])
+        setVariants((prev) => [...prev, { external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '' }])
     }
 
     const removeVariant = (index: number) => {
@@ -1172,9 +1177,11 @@ function MaterialModal({
         setSaving(true)
         const payload = {
             name,
+            external_id: externalId || null,
             category: category || null,
             description: description || null,
             variants: variants.map((v) => ({
+                external_id: v.external_id || null,
                 width_cm: v.width_cm ? parseFloat(v.width_cm) : null,
                 length_cm: v.length_cm ? parseFloat(v.length_cm) : null,
                 cost_price_per_unit: parseFloat(v.cost_price_per_unit),
@@ -1221,6 +1228,11 @@ function MaterialModal({
                         </div>
                     </div>
                     <div>
+                        <LabelWithTooltip label="Material ID (zewnętrzny)" tooltipText="ID materiału z zewnętrznego systemu (np. Baseline). Jeśli wpiszesz spacja zostana usunięte.">
+                            <input type="text" value={externalId} onChange={(e) => setExternalId(e.target.value.trim())} className={inputClass} placeholder="np. baseline-mat-001" />
+                        </LabelWithTooltip>
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
                         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={inputClass} placeholder="Opcjonalny opis" />
                     </div>
@@ -1245,7 +1257,12 @@ function MaterialModal({
                                         </button>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-4 gap-3">
+                                <div className="grid grid-cols-5 gap-3">
+                                    <div className="col-span-2">
+                                        <LabelWithTooltip label="Variant ID (zewn.)" tooltipText="Zewnętrzne ID wariantu dla tego materiału (np. id z magazynu)">
+                                            <input type="text" value={v.external_id} onChange={(e) => updateVariant(index, 'external_id', e.target.value.trim())} className={inputClass} placeholder="np. baseline-var-001" />
+                                        </LabelWithTooltip>
+                                    </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Szer. (cm)</label>
                                         <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
