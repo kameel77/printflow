@@ -32,7 +32,7 @@ class UserUpdate(BaseModel):
 
 # --------------- Endpoints ---------------
 
-@router.get("/", response_model=list[UserOut])
+@router.get("", response_model=list[UserOut])
 async def list_users(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_admin),
@@ -75,7 +75,7 @@ async def update_user(
 
     if body.role is not None:
         try:
-            user.role = UserRole(body.role)
+            user.role = UserRole(body.role.upper())
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
