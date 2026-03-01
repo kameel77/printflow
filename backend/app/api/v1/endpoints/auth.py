@@ -90,6 +90,13 @@ async def _find_or_create_user(db: AsyncSession, id_info: dict) -> User:
     email = id_info["email"]
     full_name = id_info.get("name", "")
 
+    # Check if there are any active ADMIN users
+    admin_count_result = await db.execute(
+        select(func.count(User.id)).where(User.role == UserRole.ADMIN, User.is_active == True)
+    )
+    admin_count = admin_count_result.scalar() or 0
+    needs_admin = admin_count == 0
+
     # Try by google_id first
     result = await db.execute(select(User).where(User.google_id == google_id))
     user = result.scalar_one_or_none()
@@ -104,20 +111,26 @@ async def _find_or_create_user(db: AsyncSession, id_info: dict) -> User:
             user.google_id = google_id
             if not user.full_name:
                 user.full_name = full_name
+            # If no active admins exist, auto-promote this existing user
+            if needs_admin:
+                user.role = UserRole.ADMIN
+                user.is_active = True
         else:
-            # Brand-new user — check if this is the very first user
-            count_result = await db.execute(select(func.count(User.id)))
-            user_count = count_result.scalar() or 0
-
-            is_first_user = user_count == 0
+            # Brand-new user
             user = User(
                 email=email,
                 full_name=full_name,
                 google_id=google_id,
-                role=UserRole.ADMIN if is_first_user else UserRole.SALES,
-                is_active=is_first_user,  # first user auto-active, rest need approval
+                role=UserRole.ADMIN if needs_admin else UserRole.SALES,
+                is_active=needs_admin,  # active if they become admin, otherwise needs manual activation
             )
             db.add(user)
+    else:
+        # Found by google_id
+        # If no active admins exist, auto-promote this existing user
+        if needs_admin:
+            user.role = UserRole.ADMIN
+            user.is_active = True
 
     await db.commit()
     await db.refresh(user)
