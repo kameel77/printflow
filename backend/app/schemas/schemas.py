@@ -27,6 +27,7 @@ class MaterialBase(BaseModel):
     external_id: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
+    tooltip_external_id: Optional[str] = None
 
 
 class MaterialVariantBase(BaseModel):
@@ -39,6 +40,7 @@ class MaterialVariantBase(BaseModel):
     margin_w_cm: Decimal = Decimal("0.0")
     margin_h_cm: Decimal = Decimal("0.0")
     is_active: bool = True
+    tooltip_external_id: Optional[str] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
     tooltip_markup_percentage: Optional[str] = None
@@ -64,6 +66,7 @@ class MaterialUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
+    tooltip_external_id: Optional[str] = None
     variants: Optional[List[MaterialVariantCreate]] = None
 
 

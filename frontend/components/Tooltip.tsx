@@ -45,7 +45,7 @@ export function Tooltip({ text, position = 'top', children }: TooltipProps) {
             </div>
             {isVisible && (
                 <div
-                    className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg whitespace-pre-wrap max-w-xs ${positionClasses[position]}`}
+                    className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg whitespace-pre-wrap max-w-sm ${positionClasses[position]}`}
                     role="tooltip"
                 >
                     {text}

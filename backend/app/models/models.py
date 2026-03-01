@@ -40,6 +40,9 @@ class Material(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Tooltips
+    tooltip_external_id = Column(String(500))
+    
     variants = relationship("MaterialVariant", back_populates="material", cascade="all, delete-orphan")
 
 
@@ -59,6 +62,7 @@ class MaterialVariant(Base):
     is_active = Column(Boolean, default=True)
     
     # Tooltips
+    tooltip_external_id = Column(String(500))
     tooltip_margin_w_cm = Column(String(500))
     tooltip_margin_h_cm = Column(String(500))
     tooltip_markup_percentage = Column(String(500))
