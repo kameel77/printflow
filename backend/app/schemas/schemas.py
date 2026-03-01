@@ -24,11 +24,13 @@ class QuoteStatus(str, Enum):
 # Material Schemas
 class MaterialBase(BaseModel):
     name: str
+    external_id: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
 
 
 class MaterialVariantBase(BaseModel):
+    external_id: Optional[str] = None
     width_cm: Optional[Decimal] = None
     length_cm: Optional[Decimal] = None
     cost_price_per_unit: Decimal

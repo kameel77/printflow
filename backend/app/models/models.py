@@ -33,6 +33,7 @@ class Material(Base):
     __tablename__ = "materials"
     
     id = Column(Integer, primary_key=True, index=True)
+    external_id = Column(String(255), unique=True, index=True, nullable=True)
     name = Column(String(255), nullable=False)
     category = Column(String(100))
     description = Column(Text)
@@ -46,6 +47,7 @@ class MaterialVariant(Base):
     __tablename__ = "material_variants"
     
     id = Column(Integer, primary_key=True, index=True)
+    external_id = Column(String(255), unique=True, index=True, nullable=True)
     material_id = Column(Integer, ForeignKey("materials.id", ondelete="CASCADE"))
     width_cm = Column(Numeric(10, 2))
     length_cm = Column(Numeric(10, 2))
