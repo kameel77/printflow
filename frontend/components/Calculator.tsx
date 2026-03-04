@@ -54,9 +54,14 @@ export default function Calculator() {
   const [templateId, setTemplateId] = useState<string>('')
   const [overlapOverride, setOverlapOverride] = useState<string>('')
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
+  interface Adjustment {
+    id: string
+    desc: string
+    type: 'amount' | 'percentage'
+    value: string
+  }
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>('B2C')
-  const [adjustmentDesc, setAdjustmentDesc] = useState<string>('Rabat')
-  const [adjustmentValue, setAdjustmentValue] = useState<string>('')
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([])
   const [productionDetailsOpen, setProductionDetailsOpen] = useState(false)
 
   // State
@@ -103,7 +108,7 @@ export default function Calculator() {
       setResult(null)
       setError(null)
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate, canCalculate, adjustmentValue])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate, canCalculate, adjustments])
 
   const fetchTemplates = async () => {
     try {
@@ -215,7 +220,7 @@ export default function Calculator() {
     } finally {
       setLoading(false)
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate, adjustmentValue])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate, adjustments])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pl-PL', {
@@ -227,15 +232,24 @@ export default function Calculator() {
 
   const VAT_RATE = 1.23
 
-  // Calculate adjusted totals
-  const adjustmentAmount = adjustmentValue ? parseFloat(adjustmentValue.replace(',', '.')) : 0
-
   // Base calculated totals from result
   const baseTotalNet = result?.total_price_net || 0
   const totalCostCogs = result?.total_cost_cogs || 0
 
+  let totalAdjustmentNet = 0
+  adjustments.forEach(adj => {
+    const val = parseFloat(adj.value.replace(',', '.'))
+    if (!isNaN(val) && val !== 0) {
+      if (adj.type === 'amount') {
+        totalAdjustmentNet += val
+      } else if (adj.type === 'percentage') {
+        totalAdjustmentNet += baseTotalNet * (val / 100)
+      }
+    }
+  })
+
   // Applied adjustment applies directly to Net price
-  const adjustedTotalNet = baseTotalNet + (isNaN(adjustmentAmount) ? 0 : adjustmentAmount)
+  const adjustedTotalNet = baseTotalNet + totalAdjustmentNet
   const finalTotalNet = Math.max(0, adjustedTotalNet) // Ensure total doesn't go below 0
 
   const finalTotalGross = finalTotalNet * VAT_RATE
@@ -244,6 +258,8 @@ export default function Calculator() {
   const absoluteMargin = finalTotalNet - totalCostCogs
   const finalMarginPercentage = finalTotalNet > 0 ? (absoluteMargin / finalTotalNet) * 100 : 0
 
+  const MIN_ORDER_VALUE = parseFloat(process.env.NEXT_PUBLIC_MIN_ORDER_VALUE || '40')
+  const currentTotal = customerType === 'B2C' ? finalTotalGross : finalTotalNet
 
   // Get required and optional components
   const requiredComponents = currentTemplate?.components?.filter(c => c.is_required) || []
@@ -488,35 +504,82 @@ export default function Calculator() {
             <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
 
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Korekta wyceny
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Korekty wyceny
+                  </div>
+                  <button
+                    onClick={() => setAdjustments([...adjustments, { id: Date.now().toString(), desc: 'Rabat dla stałego klienta', type: 'percentage', value: '-10' }])}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Dodaj
+                  </button>
                 </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Opis pozycji</label>
-                    <input
-                      type="text"
-                      value={adjustmentDesc}
-                      onChange={(e) => setAdjustmentDesc(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="np. Rabat specjalny"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Wartość netto (PLN)</label>
-                    <input
-                      type="number"
-                      value={adjustmentValue}
-                      onChange={(e) => setAdjustmentValue(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      step="0.01"
-                      placeholder="np. -50 lub 20"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Wart. ujemna = Rabat</p>
-                  </div>
+
+                <div className="space-y-3">
+                  {adjustments.map((adj, index) => (
+                    <div key={adj.id} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Opis</label>
+                        <input
+                          type="text"
+                          value={adj.desc}
+                          onChange={(e) => {
+                            const newAdjs = [...adjustments]
+                            newAdjs[index].desc = e.target.value
+                            setAdjustments(newAdjs)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Typ</label>
+                        <select
+                          value={adj.type}
+                          onChange={(e) => {
+                            const newAdjs = [...adjustments]
+                            newAdjs[index].type = e.target.value as 'amount' | 'percentage'
+                            setAdjustments(newAdjs)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                        >
+                          <option value="amount">Kwota</option>
+                          <option value="percentage">%</option>
+                        </select>
+                      </div>
+                      <div className="w-24">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Wartość</label>
+                        <input
+                          type="number"
+                          value={adj.value}
+                          onChange={(e) => {
+                            const newAdjs = [...adjustments]
+                            newAdjs[index].value = e.target.value
+                            setAdjustments(newAdjs)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          step="0.01"
+                        />
+                      </div>
+                      <div className="pt-5">
+                        <button
+                          onClick={() => setAdjustments(adjustments.filter(a => a.id !== adj.id))}
+                          className="text-gray-400 hover:text-red-500 p-2 transition-colors"
+                          title="Usuń"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {adjustments.length === 0 && (
+                    <p className="text-sm text-gray-400 italic text-center py-2">Brak dodanych korekt wyceny.</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">Wart. ujemna = Rabat. Procent jest liczony od sumy wartości składowych netto.</p>
                 </div>
               </div>
 
@@ -690,44 +753,63 @@ export default function Calculator() {
                       </div>
                     ))}
 
-                    {/* Adjustment Row */}
-                    {!isNaN(adjustmentAmount) && adjustmentAmount !== 0 && (
-                      <div className="px-6 py-4 bg-gray-50 transition-colors border-t border-dashed">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${adjustmentAmount < 0
-                                ? 'bg-red-100 text-red-800' // Rabat 
-                                : 'bg-green-100 text-green-800' // Dopłata
-                                }`}>
-                                {adjustmentAmount < 0 ? 'RABAT' : 'DOPŁATA'}
-                              </span>
-                              <h4 className="font-medium text-gray-900">{adjustmentDesc || 'Korekta wyceny'}</h4>
+                    {/* Adjustment Rows */}
+                    {adjustments.map((adj) => {
+                      const val = parseFloat(adj.value.replace(',', '.'))
+                      if (isNaN(val) || val === 0) return null
+
+                      const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
+
+                      return (
+                        <div key={adj.id} className="px-6 py-4 bg-gray-50 transition-colors border-t border-dashed">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-1">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${amountNet < 0
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-green-100 text-green-800'
+                                  }`}>
+                                  {amountNet < 0 ? 'RABAT' : 'DOPŁATA'}
+                                </span>
+                                <h4 className="font-medium text-gray-900">{adj.desc || 'Korekta wyceny'}</h4>
+                              </div>
+                              <p className="text-sm text-gray-500">
+                                {adj.type === 'percentage' ? `Kalkulowano jako ${val}% od sumy składowych netto.` : 'Korekta kwotowa netto.'}
+                              </p>
                             </div>
-                            <p className="text-sm text-gray-500">
-                              Zastosowano ręczną korektę kwoty całkowitej.
-                            </p>
-                          </div>
-                          <div className="text-right ml-4">
-                            <p className={`font-semibold ${adjustmentAmount < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                              {formatCurrency(customerType === 'B2C' ? adjustmentAmount * VAT_RATE : adjustmentAmount)}
-                            </p>
-                            <p className="text-sm text-gray-500">Korekta jednorazowa</p>
+                            <div className="text-right ml-4">
+                              <p className={`font-semibold ${amountNet < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                                {formatCurrency(customerType === 'B2C' ? amountNet * VAT_RATE : amountNet)}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {adj.type === 'percentage' ? `${val}%` : 'Kwota stała'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    })}
                   </div>
 
                   <div className="px-6 py-4 bg-gray-50 border-t">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-1">
                       <span className="font-medium text-gray-700">
                         {customerType === 'B2C' ? 'Suma (Brutto):' : 'Suma (Netto):'}
                       </span>
                       <span className="text-xl font-bold text-gray-900">
-                        {formatCurrency(customerType === 'B2C' ? finalTotalGross : finalTotalNet)}
+                        {formatCurrency(currentTotal)}
                       </span>
                     </div>
+
+                    {/* Minimum Order Value Warning */}
+                    {currentTotal > 0 && currentTotal < MIN_ORDER_VALUE && (
+                      <div className="mt-3 p-3 bg-red-50 rounded-lg flex items-start gap-2 border border-red-100">
+                        <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <p className="text-sm text-red-800">
+                          Uwaga! Poinformuj klienta, że minimalna wartość zamówienia to <span className="font-bold">{MIN_ORDER_VALUE} zł</span>.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
