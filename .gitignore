@@ -43,6 +43,7 @@ env/
 node_modules/
 .next/
 dist/
+tsconfig.tsbuildinfo
 
 # OS
 .DS_Store
