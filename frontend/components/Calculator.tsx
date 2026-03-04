@@ -35,7 +35,7 @@ interface CalculationResult {
       height_cm: number
       quantity: number
     }>
-    total_waste_cm2: number
+    total_waste_m2: number
     num_panels: number
   }>
   debug?: string[]
@@ -213,7 +213,7 @@ export default function Calculator() {
             console.log(`  Ilość: ${p.quantity}, Rozmiar: ${p.width_cm.toFixed(1)}×${p.height_cm.toFixed(1)} cm`)
           })
           console.log(`  Łączna liczba brytów: ${pm.num_panels}`)
-          console.log(`  Odpad: ${pm.total_waste_cm2.toFixed(0)} cm²`)
+          console.log(`  Odpad: ${pm.total_waste_m2.toFixed(2)} m²`)
           console.groupEnd()
         })
         console.groupEnd()

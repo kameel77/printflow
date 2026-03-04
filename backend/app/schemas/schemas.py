@@ -216,7 +216,7 @@ class PanelInfo(BaseModel):
 class PanelMethodResult(BaseModel):
     method: str  # 'standard' | 'effective'
     panels: List[PanelInfo]
-    total_waste_cm2: float
+    total_waste_m2: float
     num_panels: int
 
 
