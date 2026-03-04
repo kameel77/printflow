@@ -186,13 +186,13 @@ class PrintFlowEngine:
                     )
                 
                 # Update orientation based on the best fit found
-                self.log(f"Wybrano wariant: {res.get('width_cm'):.1f}cm, koszt: {res['cost']:.2f}")
                 is_split = res['num_p'] > 1
                 num_panels = res['num_p']
                 cur_w_g = res['used_w']
                 cur_h_g = res['used_h']
                 
                 price = res['cost'] * (1 + self._q(res['markup_percentage']) / 100)
+                self.log(f"Wybrano wariant: {res.get('width_cm'):.1f}cm, koszt: {res['cost']:.2f} | Cena: {price:.2f}")
                 
                 total_cost += res['cost']
                 total_price += price
