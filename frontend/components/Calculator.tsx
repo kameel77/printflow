@@ -28,6 +28,16 @@ interface CalculationResult {
     details: string
     is_rotated?: boolean
   }>
+  panel_methods?: Array<{
+    method: string
+    panels: Array<{
+      width_cm: number
+      height_cm: number
+      quantity: number
+    }>
+    total_waste_cm2: number
+    num_panels: number
+  }>
   debug?: string[]
 }
 
@@ -190,6 +200,22 @@ export default function Calculator() {
       if (response.data.debug && Array.isArray(response.data.debug)) {
         console.group('✅ KALKULACJA OK — logi silnika:')
         response.data.debug.forEach((log: string) => console.log(`[CALC] ${log}`))
+        console.groupEnd()
+      }
+
+      // Log panel methods (standard vs effective)
+      if (response.data.panel_methods && response.data.panel_methods.length > 0) {
+        console.group('📐 METODY KALKULACJI BRYTÓW')
+        response.data.panel_methods.forEach((pm: any) => {
+          const label = pm.method === 'standard' ? '📏 METODA STANDARDOWA (bryty równej szerokości)' : '✂️ METODA EFEKTYWNA (minimalizacja odpadów)'
+          console.group(label)
+          pm.panels.forEach((p: any) => {
+            console.log(`  Ilość: ${p.quantity}, Rozmiar: ${p.width_cm.toFixed(1)}×${p.height_cm.toFixed(1)} cm`)
+          })
+          console.log(`  Łączna liczba brytów: ${pm.num_panels}`)
+          console.log(`  Odpad: ${pm.total_waste_cm2.toFixed(0)} cm²`)
+          console.groupEnd()
+        })
         console.groupEnd()
       }
     } catch (err: any) {

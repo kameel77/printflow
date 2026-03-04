@@ -8,7 +8,9 @@ from app.schemas.schemas import (
     CalculationRequest, 
     CalculationResponse, 
     ComponentResult,
-    CalculationMethod
+    CalculationMethod,
+    PanelInfo,
+    PanelMethodResult
 )
 
 
@@ -140,6 +142,68 @@ class PrintFlowEngine:
         
         return best_v
     
+    def calculate_panels_standard(
+        self,
+        w_g: Decimal,
+        h_g: Decimal,
+        effective_roll_w: Decimal,
+        overlap: Decimal
+    ) -> PanelMethodResult:
+        """Standard method: equal-width panels"""
+        if w_g <= effective_roll_w:
+            panels = [PanelInfo(width_cm=float(w_g), height_cm=float(h_g), quantity=1)]
+            waste = float((effective_roll_w - w_g) * h_g)
+            return PanelMethodResult(method="standard", panels=panels, total_waste_cm2=waste, num_panels=1)
+        
+        num_p = math.ceil(float(w_g / effective_roll_w))
+        panel_w = (w_g / num_p) + overlap
+        panels = [PanelInfo(width_cm=float(panel_w), height_cm=float(h_g), quantity=num_p)]
+        waste_per_panel = float(effective_roll_w - panel_w)
+        total_waste = waste_per_panel * num_p * float(h_g)
+        return PanelMethodResult(method="standard", panels=panels, total_waste_cm2=max(0, total_waste), num_panels=num_p)
+    
+    def calculate_panels_effective(
+        self,
+        w_g: Decimal,
+        h_g: Decimal,
+        effective_roll_w: Decimal,
+        overlap: Decimal
+    ) -> PanelMethodResult:
+        """Effective method: variable-width panels that minimize waste.
+        
+        First panel uses maximum roll width, subsequent panels use the
+        remaining width. This leaves larger leftover strips from the last
+        roll for future production use.
+        """
+        if w_g <= effective_roll_w:
+            panels = [PanelInfo(width_cm=float(w_g), height_cm=float(h_g), quantity=1)]
+            waste = float((effective_roll_w - w_g) * h_g)
+            return PanelMethodResult(method="effective", panels=panels, total_waste_cm2=waste, num_panels=1)
+        
+        panels: list[PanelInfo] = []
+        remaining_w = w_g
+        total_waste = Decimal("0")
+        panel_count = 0
+        
+        while remaining_w > Decimal("0"):
+            if remaining_w <= effective_roll_w:
+                # Last panel — fits on one roll, add overlap only if not the first panel
+                actual_w = remaining_w + (overlap if panel_count > 0 else Decimal("0"))
+                waste_this = (effective_roll_w - actual_w) * h_g
+                total_waste += max(Decimal("0"), waste_this)
+                panels.append(PanelInfo(width_cm=float(actual_w), height_cm=float(h_g), quantity=1))
+                panel_count += 1
+                remaining_w = Decimal("0")
+            else:
+                # Full-width panel — use entire effective roll width
+                actual_w = effective_roll_w
+                panels.append(PanelInfo(width_cm=float(actual_w), height_cm=float(h_g), quantity=1))
+                panel_count += 1
+                # Subtract used width, accounting for overlap on the next panel
+                remaining_w -= (effective_roll_w - overlap)
+        
+        return PanelMethodResult(method="effective", panels=panels, total_waste_cm2=float(max(Decimal("0"), total_waste)), num_panels=panel_count)
+    
     def run(self, req: CalculationRequest) -> CalculationResponse:
         """Main calculation entry point"""
         template = self.db.get('templates', {}).get(req.template_id) if req.template_id else None
@@ -247,6 +311,33 @@ class PrintFlowEngine:
         # Calculate margin
         margin_pct = ((total_price - total_cost) / total_price * 100) if total_price > 0 else Decimal("0")
         
+        # Calculate panel methods (standard + effective) for the primary material
+        panel_methods = []
+        # Find the effective roll width from the best material variant found
+        for comp in active_comps:
+            if comp.get('material_id'):
+                res = self.calculate_nesting_and_splitting(
+                    w_g, h_g, req.quantity, comp['material_id'], overlap
+                )
+                if res:
+                    v_width = self._q(res['width_cm'])
+                    effective_v_w = v_width - (self._q(res.get('margin_w_cm', 0)) * 2)
+                    
+                    std = self.calculate_panels_standard(cur_w_g, cur_h_g, effective_v_w, overlap)
+                    eff = self.calculate_panels_effective(cur_w_g, cur_h_g, effective_v_w, overlap)
+                    panel_methods = [std, eff]
+                    
+                    self.log(f"--- METODA STANDARDOWA ({res['width_cm']}cm rolka) ---")
+                    for p in std.panels:
+                        self.log(f"  Ilość: {p.quantity}, Rozmiar: {p.width_cm:.1f}×{p.height_cm:.1f} cm")
+                    self.log(f"  Odpad: {std.total_waste_cm2:.0f} cm²")
+                    
+                    self.log(f"--- METODA EFEKTYWNA ({res['width_cm']}cm rolka) ---")
+                    for p in eff.panels:
+                        self.log(f"  Ilość: {p.quantity}, Rozmiar: {p.width_cm:.1f}×{p.height_cm:.1f} cm")
+                    self.log(f"  Odpad: {eff.total_waste_cm2:.0f} cm²")
+                break  # Only use the first (primary) material
+        
         return CalculationResponse(
             total_price_net=self._money(total_price),
             total_cost_cogs=self._money(total_cost),
@@ -261,6 +352,7 @@ class PrintFlowEngine:
                 "total": self._money(total_price)
             }],
             tech_view=tech_view,
+            panel_methods=panel_methods,
             debug=self.logs
         )
 
