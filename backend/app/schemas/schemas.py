@@ -207,6 +207,19 @@ class ComponentResult(BaseModel):
     is_rotated: bool = False
 
 
+class PanelInfo(BaseModel):
+    width_cm: float
+    height_cm: float
+    quantity: int
+
+
+class PanelMethodResult(BaseModel):
+    method: str  # 'standard' | 'effective'
+    panels: List[PanelInfo]
+    total_waste_m2: float
+    num_panels: int
+
+
 class CalculationResponse(BaseModel):
     total_price_net: float
     total_cost_cogs: float
@@ -217,6 +230,7 @@ class CalculationResponse(BaseModel):
     overlap_used_cm: float
     client_view: List[Dict[str, Any]]
     tech_view: List[ComponentResult]
+    panel_methods: List[PanelMethodResult] = []
     debug: List[str] = []
 
 

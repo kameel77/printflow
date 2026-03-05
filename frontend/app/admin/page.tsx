@@ -273,7 +273,7 @@ export default function AdminPage() {
     }
 
     const allTabs: { id: TabId; label: string; count: number }[] = [
-        { id: 'templates', label: 'Szablony', count: templates.length },
+        { id: 'templates', label: 'Produkty', count: templates.length },
         { id: 'materials', label: 'Materiały', count: materials.length },
         { id: 'processes', label: 'Procesy', count: processes.length },
         { id: 'users', label: 'Użytkownicy', count: users.length },
@@ -289,7 +289,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Panel Administracyjny</h1>
-                            <p className="text-sm text-gray-500 mt-1">Zarządzanie szablonami, materiałami i procesami</p>
+                            <p className="text-sm text-gray-500 mt-1">Zarządzanie produktami, materiałami i procesami</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <Link
@@ -368,13 +368,13 @@ export default function AdminPage() {
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                         </svg>
-                                        Dodaj szablon
+                                        Dodaj produkt
                                     </button>
                                 </div>
 
                                 {templates.length === 0 ? (
                                     <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-                                        <p className="text-gray-500">Brak szablonów. Kliknij &quot;Dodaj szablon&quot; aby utworzyć pierwszy.</p>
+                                        <p className="text-gray-500">Brak produktów. Kliknij &quot;Dodaj produkt&quot; aby utworzyć pierwszy.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
@@ -513,6 +513,7 @@ export default function AdminPage() {
                                                                     <thead className="bg-gray-50">
                                                                         <tr>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Szer. (cm)</th>
+                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Wys. (cm)</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Cena/jedn.</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">
                                                                                 <span className="inline-flex items-center gap-1">
@@ -545,6 +546,7 @@ export default function AdminPage() {
                                                                         {m.variants.map((v, i) => (
                                                                             <tr key={i}>
                                                                                 <td className="px-4 py-2 text-gray-900">{v.width_cm ?? '—'}</td>
+                                                                                <td className="px-4 py-2 text-gray-900">{v.length_cm ?? '—'}</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.cost_price_per_unit).toFixed(2)} zł</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.markup_percentage)}%</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.margin_w_cm)} cm</td>
@@ -930,7 +932,7 @@ function TemplateModal({
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
                 <div className="px-6 py-4 border-b flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">
-                        {template ? 'Edytuj szablon' : 'Nowy szablon'}
+                        {template ? 'Edytuj produkt' : 'Nowy produkt'}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -960,7 +962,7 @@ function TemplateModal({
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={2}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Opcjonalny opis szablonu"
+                                placeholder="Opcjonalny opis produktu"
                             />
                         </div>
                     </div>
@@ -1030,7 +1032,7 @@ function TemplateModal({
 
                         {components.length === 0 ? (
                             <p className="text-sm text-gray-500 italic">
-                                Brak komponentów. Dodaj materiały i procesy do szablonu.
+                                Brak komponentów. Dodaj materiały i procesy do produktu.
                             </p>
                         ) : (
                             <div className="space-y-3">
@@ -1108,7 +1110,7 @@ function TemplateModal({
                             disabled={saving || !name}
                             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                         >
-                            {saving ? 'Zapisywanie...' : template ? 'Zapisz zmiany' : 'Utwórz szablon'}
+                            {saving ? 'Zapisywanie...' : template ? 'Zapisz zmiany' : 'Utwórz produkt'}
                         </button>
                     </div>
                 </form>
@@ -1283,13 +1285,8 @@ function MaterialModal({
                                         <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
-                                        <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
-                                    </div>
-                                    <div>
-                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
-                                            <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
-                                        </LabelWithTooltip>
+                                        <label className="block text-xs text-gray-500 mb-1">Wys. (cm)</label>
+                                        <input type="number" value={v.length_cm} onChange={(e) => updateVariant(index, 'length_cm', e.target.value)} step="0.1" className={inputClass} />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
@@ -1300,16 +1297,25 @@ function MaterialModal({
                                         </select>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
+                                        <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                            <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
+                                        </LabelWithTooltip>
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Marg. W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <LabelWithTooltip label="Marg. H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
-                                    <div className="col-span-2 flex items-end">
+                                    <div className="col-span-1 flex items-end">
                                         <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                             <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             Aktywny
