@@ -513,6 +513,7 @@ export default function AdminPage() {
                                                                     <thead className="bg-gray-50">
                                                                         <tr>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Szer. (cm)</th>
+                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Wys. (cm)</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Cena/jedn.</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">
                                                                                 <span className="inline-flex items-center gap-1">
@@ -545,6 +546,7 @@ export default function AdminPage() {
                                                                         {m.variants.map((v, i) => (
                                                                             <tr key={i}>
                                                                                 <td className="px-4 py-2 text-gray-900">{v.width_cm ?? '—'}</td>
+                                                                                <td className="px-4 py-2 text-gray-900">{v.length_cm ?? '—'}</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.cost_price_per_unit).toFixed(2)} zł</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.markup_percentage)}%</td>
                                                                                 <td className="px-4 py-2 text-gray-900">{Number(v.margin_w_cm)} cm</td>
@@ -1283,13 +1285,8 @@ function MaterialModal({
                                         <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
-                                        <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
-                                    </div>
-                                    <div>
-                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
-                                            <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
-                                        </LabelWithTooltip>
+                                        <label className="block text-xs text-gray-500 mb-1">Wys. (cm)</label>
+                                        <input type="number" value={v.length_cm} onChange={(e) => updateVariant(index, 'length_cm', e.target.value)} step="0.1" className={inputClass} />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
@@ -1300,16 +1297,25 @@ function MaterialModal({
                                         </select>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
+                                        <input type="number" value={v.cost_price_per_unit} onChange={(e) => updateVariant(index, 'cost_price_per_unit', e.target.value)} step="0.01" required className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Narzut %" tooltipText={v.tooltip_markup_percentage || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                            <input type="number" value={v.markup_percentage} onChange={(e) => updateVariant(index, 'markup_percentage', e.target.value)} step="0.1" className={inputClass} />
+                                        </LabelWithTooltip>
+                                    </div>
+                                    <div>
+                                        <LabelWithTooltip label="Marg. W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <LabelWithTooltip label="Marg. H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
-                                    <div className="col-span-2 flex items-end">
+                                    <div className="col-span-1 flex items-end">
                                         <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                             <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             Aktywny
