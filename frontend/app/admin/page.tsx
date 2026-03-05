@@ -513,7 +513,7 @@ export default function AdminPage() {
                                                                     <thead className="bg-gray-50">
                                                                         <tr>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Szer. (cm)</th>
-                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Dł. (cm)</th>
+                                                                            <th className="px-4 py-2 text-left font-medium text-gray-500">Wys. (cm)</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">Cena/jedn.</th>
                                                                             <th className="px-4 py-2 text-left font-medium text-gray-500">
                                                                                 <span className="inline-flex items-center gap-1">
@@ -1274,7 +1274,7 @@ function MaterialModal({
                                         </button>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-6 gap-3">
+                                <div className="grid grid-cols-5 gap-3">
                                     <div className="col-span-2">
                                         <LabelWithTooltip label="Wariant ID" tooltipText={v.tooltip_external_id || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="text" value={v.external_id} onChange={(e) => updateVariant(index, 'external_id', e.target.value.trim())} className={inputClass} placeholder="np. 00001" />
@@ -1285,8 +1285,16 @@ function MaterialModal({
                                         <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Dł. (cm)</label>
+                                        <label className="block text-xs text-gray-500 mb-1">Wys. (cm)</label>
                                         <input type="number" value={v.length_cm} onChange={(e) => updateVariant(index, 'length_cm', e.target.value)} step="0.1" className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
+                                        <select value={v.unit} onChange={(e) => updateVariant(index, 'unit', e.target.value)} className={inputClass}>
+                                            <option value="m2">m²</option>
+                                            <option value="mb">mb</option>
+                                            <option value="szt">szt</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
@@ -1298,24 +1306,16 @@ function MaterialModal({
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
-                                        <select value={v.unit} onChange={(e) => updateVariant(index, 'unit', e.target.value)} className={inputClass}>
-                                            <option value="m2">m²</option>
-                                            <option value="mb">mb</option>
-                                            <option value="szt">szt</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <LabelWithTooltip label="Margines W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <LabelWithTooltip label="Marg. W (cm)" tooltipText={v.tooltip_margin_w_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_w_cm} onChange={(e) => updateVariant(index, 'margin_w_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <LabelWithTooltip label="Margines H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
+                                        <LabelWithTooltip label="Marg. H (cm)" tooltipText={v.tooltip_margin_h_cm || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="number" value={v.margin_h_cm} onChange={(e) => updateVariant(index, 'margin_h_cm', e.target.value)} step="0.1" className={inputClass} />
                                         </LabelWithTooltip>
                                     </div>
-                                    <div className="col-span-3 flex items-end">
+                                    <div className="col-span-1 flex items-end">
                                         <label className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                             <input type="checkbox" checked={v.is_active} onChange={(e) => updateVariant(index, 'is_active', e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                             Aktywny
