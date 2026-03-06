@@ -80,7 +80,7 @@ export default function Calculator() {
   const [error, setError] = useState<string | null>(null)
   const [templates, setTemplates] = useState<Template[]>([])
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null)
-  const [autoCalculate, setAutoCalculate] = useState(true)
+
 
   // Fetch templates on mount
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function Calculator() {
 
   // Auto-calculate when parameters change
   useEffect(() => {
-    if (autoCalculate && canCalculate) {
+    if (canCalculate) {
       const timeoutId = setTimeout(() => {
         handleCalculate()
       }, 500)
@@ -118,7 +118,7 @@ export default function Calculator() {
       setResult(null)
       setError(null)
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, autoCalculate, canCalculate, adjustments])
+  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate, adjustments])
 
   const fetchTemplates = async () => {
     try {
@@ -307,7 +307,7 @@ export default function Calculator() {
               />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Printflow MIS</h1>
-                <p className="text-sm text-gray-500 mt-1">System wycen Satto Media</p>
+                <p className="text-sm text-gray-500 mt-1">Kalkulacja prod. masowa</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -321,15 +321,7 @@ export default function Calculator() {
                 </svg>
                 Setup produktów
               </Link>
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={autoCalculate}
-                  onChange={(e) => setAutoCalculate(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                Auto-kalkulacja
-              </label>
+
               <button
                 onClick={handleCalculate}
                 disabled={loading || !canCalculate}
@@ -660,15 +652,15 @@ export default function Calculator() {
                       {customerType === 'B2C' ? 'Cena brutto' : 'Cena netto'}
                     </p>
                     <p className="text-3xl font-bold">
-                      {formatCurrency(customerType === 'B2C' ? finalTotalGross : finalTotalNet)}
+                      {formatCurrency((customerType === 'B2C' ? finalTotalGross : finalTotalNet) / (parseInt(quantity) || 1))}
                     </p>
                     <p className="text-blue-100 text-xs mt-2 font-medium">
                       {customerType === 'B2C'
-                        ? `Netto: ${formatCurrency(finalTotalNet)} (Vat 23%)`
-                        : `Brutto: ${formatCurrency(finalTotalGross)} (Vat 23%)`}
+                        ? `Netto: ${formatCurrency(finalTotalNet / (parseInt(quantity) || 1))} (Vat 23%)`
+                        : `Brutto: ${formatCurrency(finalTotalGross / (parseInt(quantity) || 1))} (Vat 23%)`}
                     </p>
                     <p className="text-blue-100 text-xs mt-1">
-                      za {result.client_view[0]?.qty || quantity} szt.
+                      za 1 szt.
                     </p>
                   </div>
 
@@ -676,16 +668,13 @@ export default function Calculator() {
                     <p className="text-green-100 text-sm font-medium mb-1">Marża</p>
                     <p className="text-3xl font-bold">{finalMarginPercentage.toFixed(1)}%</p>
                     <p className="text-green-100 text-xs mt-2">
-                      {formatCurrency(absoluteMargin)} zysk
+                      {formatCurrency(absoluteMargin)} zysk netto
                     </p>
                   </div>
 
                   <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                    <p className="text-purple-100 text-sm font-medium mb-1">Koszt wytworzenia</p>
+                    <p className="text-purple-100 text-sm font-medium mb-1">Koszt wytworzenia netto</p>
                     <p className="text-3xl font-bold">{formatCurrency(result.total_cost_cogs)}</p>
-                    <p className="text-purple-100 text-xs mt-2">
-                      COGS (koszt materiałów i procesów)
-                    </p>
                   </div>
                 </div>
 
