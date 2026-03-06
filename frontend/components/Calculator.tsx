@@ -203,11 +203,16 @@ export default function Calculator() {
         console.groupEnd()
       }
 
-      // Log panel methods (standard vs effective)
+      // Log panel methods (standard vs wycena_masowa)
       if (response.data.panel_methods && response.data.panel_methods.length > 0) {
         console.group('📐 METODY KALKULACJI BRYTÓW')
         response.data.panel_methods.forEach((pm: any) => {
-          const label = pm.method === 'standard' ? '📏 METODA STANDARDOWA (bryty równej szerokości)' : '✂️ METODA EFEKTYWNA (minimalizacja odpadów)'
+          const labelMap: Record<string, string> = {
+            standard: '📏 METODA STANDARDOWA (bryty równej szerokości)',
+            wycena_masowa: '💰 WYCENA MASOWA (minimalizacja odpadów)',
+            efektywna: '🎯 METODA EFEKTYWNA (optymalny dobór rolki)',
+          }
+          const label = labelMap[pm.method] ?? pm.method
           console.group(label)
           pm.panels.forEach((p: any) => {
             console.log(`  Ilość: ${p.quantity}, Rozmiar: ${p.width_cm.toFixed(1)}×${p.height_cm.toFixed(1)} cm`)

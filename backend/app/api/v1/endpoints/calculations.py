@@ -91,6 +91,7 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_margin_w_cm": float(t.default_margin_w_cm) if t.default_margin_w_cm else 0.0,
             "default_margin_h_cm": float(t.default_margin_h_cm) if t.default_margin_h_cm else 0.0,
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
+            "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
             "components": components,
         }
 
