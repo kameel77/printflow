@@ -435,7 +435,7 @@ class PrintFlowEngine:
                     qty=float(res['area']),
                     unit="m2",
                     price_net=self._money(price),
-                    details=f"Bryty: {num_panels}, Zakładka: {overlap}cm" + (f" (stosowana)" if num_panels > 1 else " (brak – 1 bryt)") + f", Szer. brytu: {res['panel_w']:.1f}cm, Rotacja: {rot_text}",
+                    details=f"Bryty: {num_panels}, Zakładka: {overlap:.1f}cm" + (f" (stosowana)" if num_panels > 1 else " (brak – 1 bryt)") + f", Szer. brytu: {res['panel_w']:.1f}cm, Rotacja: {rot_text}",
                     is_rotated=rotated_flag
                 ))
             
