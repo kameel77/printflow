@@ -102,6 +102,7 @@ class ProductTemplate(Base):
     default_margin_w_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     default_margin_h_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     default_overlap_cm = Column(Numeric(10, 2), default=Decimal("1.0"))
+    max_bryt_width_cm = Column(Numeric(10, 2), nullable=True)
     is_active = Column(Boolean, default=True)
     
     # Tooltips

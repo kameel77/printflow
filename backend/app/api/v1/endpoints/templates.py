@@ -44,6 +44,7 @@ async def create_template(
         default_margin_w_cm=template.default_margin_w_cm,
         default_margin_h_cm=template.default_margin_h_cm,
         default_overlap_cm=template.default_overlap_cm,
+        max_bryt_width_cm=template.max_bryt_width_cm,
         is_active=template.is_active,
     )
     for comp in template.components:

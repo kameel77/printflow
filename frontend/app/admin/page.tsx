@@ -76,6 +76,7 @@ interface Template {
     default_margin_w_cm: number
     default_margin_h_cm: number
     default_overlap_cm: number
+    max_bryt_width_cm: number | null
     is_active: boolean
     components: TemplateComponent[]
     tooltip_margin_w_cm?: string | null
@@ -869,6 +870,7 @@ function TemplateModal({
     const [marginW, setMarginW] = useState(String(template ? Number(template.default_margin_w_cm) : '0.5'))
     const [marginH, setMarginH] = useState(String(template ? Number(template.default_margin_h_cm) : '0.5'))
     const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
+    const [maxBrytWidth, setMaxBrytWidth] = useState(template?.max_bryt_width_cm != null ? String(Number(template.max_bryt_width_cm)) : '')
     const [isActive, setIsActive] = useState(template?.is_active ?? true)
     const [components, setComponents] = useState<
         { type: 'material' | 'process'; refId: string; isRequired: boolean; sortOrder: number }[]
@@ -914,6 +916,7 @@ function TemplateModal({
             default_margin_w_cm: parseFloat(marginW),
             default_margin_h_cm: parseFloat(marginH),
             default_overlap_cm: parseFloat(overlap),
+            max_bryt_width_cm: maxBrytWidth ? parseFloat(maxBrytWidth) : null,
             is_active: isActive,
             components: components.map((c) => ({
                 material_id: c.type === 'material' ? parseInt(c.refId) : null,
@@ -968,7 +971,7 @@ function TemplateModal({
                     </div>
 
                     {/* Parameters */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         <LabelWithTooltip label="Margines W (cm)" tooltipText={template?.tooltip_margin_w_cm}>
                             <input
                                 type="number"
@@ -999,6 +1002,18 @@ function TemplateModal({
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </LabelWithTooltip>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max W brytu (cm)</label>
+                            <input
+                                type="number"
+                                value={maxBrytWidth}
+                                onChange={(e) => setMaxBrytWidth(e.target.value)}
+                                step="0.1"
+                                min="0"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="np. 100"
+                            />
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1281,12 +1296,12 @@ function MaterialModal({
                                         </LabelWithTooltip>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Szer. (cm)</label>
-                                        <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" className={inputClass} />
+                                        <label className="block text-xs text-gray-500 mb-1">Szer. (cm) *</label>
+                                        <input type="number" value={v.width_cm} onChange={(e) => updateVariant(index, 'width_cm', e.target.value)} step="0.1" required className={`${inputClass} ${!v.width_cm ? 'border-red-300' : ''}`} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Wys. (cm)</label>
-                                        <input type="number" value={v.length_cm} onChange={(e) => updateVariant(index, 'length_cm', e.target.value)} step="0.1" className={inputClass} />
+                                        <label className="block text-xs text-gray-500 mb-1">Wys. (cm) *</label>
+                                        <input type="number" value={v.length_cm} onChange={(e) => updateVariant(index, 'length_cm', e.target.value)} step="0.1" required className={`${inputClass} ${!v.length_cm ? 'border-red-300' : ''}`} />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Jedn.</label>
@@ -1351,7 +1366,7 @@ function MaterialModal({
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Anuluj</button>
-                        <button type="submit" disabled={saving || !name} className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                        <button type="submit" disabled={saving || !name || variants.some(v => !v.width_cm || !v.length_cm)} className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
                             {saving ? 'Zapisywanie...' : material ? 'Zapisz zmiany' : 'Utwórz materiał'}
                         </button>
                     </div>
