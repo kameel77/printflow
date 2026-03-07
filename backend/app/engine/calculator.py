@@ -162,7 +162,8 @@ class PrintFlowEngine:
             )
         
         num_p = math.ceil(float(w_g / effective_roll_w))
-        panel_w = (w_g / num_p) + overlap
+        # Zakładka tylko gdy > 1 bryt
+        panel_w = (w_g / num_p) + (overlap if num_p > 1 else Decimal("0"))
         panels = [PanelInfo(width_cm=float(panel_w), height_cm=float(h_g), quantity=num_p * quantity)]
         waste_per_panel_cm2 = max(Decimal("0"), (effective_roll_w - panel_w) * h_g)
         total_waste_cm2 = waste_per_panel_cm2 * num_p * quantity
@@ -245,12 +246,119 @@ class PrintFlowEngine:
         aggregated = self._aggregate_panels(all_panels)
         
         return PanelMethodResult(
-            method="effective",
+            method="wycena_masowa",
             panels=aggregated,
             total_waste_m2=round(float(total_waste_cm2) / 10000, 2),
             num_panels=total_panel_count
         )
     
+    def calculate_panels_efektywna(
+        self,
+        w_g: Decimal,
+        h_g: Decimal,
+        roll_width: Decimal,
+        variant_margin_w: Decimal,
+        overlap: Decimal,
+        quantity: int,
+        max_bryt_width_cm: Optional[Decimal] = None,
+    ) -> PanelMethodResult:
+        """Metoda Efektywna: minimalizacja odpadu metodą pełnych brytów.
+
+        Zasady:
+        - 1 bryt: brak zakładki, odpad = (roll - w_g) * h_g.
+        - >1 bryt: każdy pełny bryt zajmuje całą szer. rolki;
+          ostatni bryt = pozostałość + 2*margin + zakładka;
+          odpad tylko z ostatniego brytu.
+        - max_bryt_width_cm ogranicza fizyczną szer. brytu.
+        """
+        effective_roll_w = roll_width - (variant_margin_w * 2)  # fizycznie dostępne
+        usable_bryt_w = effective_roll_w
+        if max_bryt_width_cm and max_bryt_width_cm > Decimal("0"):
+            usable_bryt_w = min(usable_bryt_w, max_bryt_width_cm)
+
+        # --- 1-bryt case: cały produkt mieści się na jednej rolce ---
+        if w_g <= usable_bryt_w:
+            waste_w = effective_roll_w - w_g
+            total_waste = waste_w * h_g * quantity
+            return PanelMethodResult(
+                method="efektywna",
+                panels=[PanelInfo(width_cm=float(w_g), height_cm=float(h_g), quantity=quantity)],
+                total_waste_m2=round(float(total_waste) / 10000, 4),
+                num_panels=quantity,
+            )
+
+        # --- >1 bryt: kalkulacja wzorca dla 1 egzemplarza ---
+        # Ile druku mieści się na 1 pełnym brycie (effective - zakładka)
+        max_print_per_full_bryt = usable_bryt_w - overlap
+
+        panel_physical_widths: list[Decimal] = []
+        remaining = w_g
+
+        while remaining > Decimal("0"):
+            if remaining <= max_print_per_full_bryt:
+                # Ostatni bryt: rzeczywisty druk + 2*margines + zakładka
+                last_physical = remaining + (variant_margin_w * 2) + overlap
+                panel_physical_widths.append(last_physical)
+                remaining = Decimal("0")
+            else:
+                # Pełny bryt: zajmuje całą szer. rolki (usable_bryt_w)
+                panel_physical_widths.append(usable_bryt_w)
+                remaining -= max_print_per_full_bryt
+
+        # Odpad: tylko z ostatniego brytu (roll_width - last_bryt_physical)
+        last_physical_w = panel_physical_widths[-1]
+        waste_per_product = max(Decimal("0"), roll_width - last_physical_w) * h_g
+        total_waste = waste_per_product * quantity
+
+        # Buduj listę paneli (pattern × quantity)
+        all_widths = panel_physical_widths * quantity
+        aggregated = self._aggregate_panels([
+            PanelInfo(width_cm=float(w.quantize(Decimal("0.01"))), height_cm=float(h_g), quantity=1)
+            for w in all_widths
+        ])
+
+        return PanelMethodResult(
+            method="efektywna",
+            panels=aggregated,
+            total_waste_m2=round(float(total_waste) / 10000, 4),
+            num_panels=len(all_widths),
+        )
+
+    def _select_optimal_variant_efektywna(
+        self,
+        w_g: Decimal,
+        h_g: Decimal,
+        material_id: int,
+        overlap: Decimal,
+        quantity: int,
+        max_bryt_width_cm: Optional[Decimal],
+    ) -> Optional[tuple[dict, PanelMethodResult]]:
+        """Wybiera wariant materiału z najmniejszym odpadem (metoda efektywna).
+        Remis w odpadzie: wygrywa wariant z mniejszą liczbą brytów.
+        """
+        variants = self.db.get('material_variants', {}).get(material_id, [])
+        best_variant = None
+        best_result: Optional[PanelMethodResult] = None
+
+        for v in variants:
+            if not v.get('width_cm'):
+                continue
+            roll_w = self._q(v['width_cm'])
+            margin_w = self._q(v.get('margin_w_cm', 0))
+            result = self.calculate_panels_efektywna(
+                w_g, h_g, roll_w, margin_w, overlap, quantity, max_bryt_width_cm
+            )
+            if best_result is None:
+                best_variant, best_result = v, result
+                continue
+            # Mniejszy odpad wygrywa; remis -> mniej brytów
+            if (result.total_waste_m2 < best_result.total_waste_m2 or
+                    (result.total_waste_m2 == best_result.total_waste_m2 and
+                     result.num_panels < best_result.num_panels)):
+                best_variant, best_result = v, result
+
+        return (best_variant, best_result) if best_variant else None
+
     def _aggregate_panels(self, panels: list[PanelInfo]) -> list[PanelInfo]:
         """Aggregate panels with the same dimensions, summing quantities."""
         size_map: dict[tuple[float, float], int] = {}
@@ -327,7 +435,7 @@ class PrintFlowEngine:
                     qty=float(res['area']),
                     unit="m2",
                     price_net=self._money(price),
-                    details=f"Bryty: {num_panels}, Zakładka: {overlap}cm, Szer. brytu: {res['panel_w']:.1f}cm, Rotacja: {rot_text}",
+                    details=f"Bryty: {num_panels}, Zakładka: {overlap:.1f}cm" + (f" (stosowana)" if num_panels > 1 else " (brak – 1 bryt)") + f", Szer. brytu: {res['panel_w']:.1f}cm, Rotacja: {rot_text}",
                     is_rotated=rotated_flag
                 ))
             
@@ -367,8 +475,10 @@ class PrintFlowEngine:
         # Calculate margin
         margin_pct = ((total_price - total_cost) / total_price * 100) if total_price > 0 else Decimal("0")
         
-        # Calculate panel methods (standard + effective) for the primary material
+        # --- Metody kalkulacji brytów dla materiału głównego ---
         panel_methods = []
+        max_bryt_cm = self._q(template.get('max_bryt_width_cm', 0)) if template and template.get('max_bryt_width_cm') else None
+
         for comp in active_comps:
             if comp.get('material_id'):
                 res = self.calculate_nesting_and_splitting(
@@ -377,22 +487,39 @@ class PrintFlowEngine:
                 if res:
                     v_width = self._q(res['width_cm'])
                     effective_v_w = v_width - (self._q(res.get('margin_w_cm', 0)) * 2)
-                    
+
+                    # Metoda standardowa
                     std = self.calculate_panels_standard(cur_w_g, cur_h_g, effective_v_w, overlap, req.quantity)
-                    eff = self.calculate_panels_effective(cur_w_g, cur_h_g, effective_v_w, overlap, req.quantity)
-                    panel_methods = [std, eff]
-                    
                     self.log(f"--- METODA STANDARDOWA ({res['width_cm']}cm rolka, {req.quantity} szt.) ---")
                     for p in std.panels:
                         self.log(f"  Ilość: {p.quantity}, Rozmiar: {p.width_cm:.1f}×{p.height_cm:.1f} cm")
                     self.log(f"  Łączna liczba brytów: {std.num_panels}")
                     self.log(f"  Odpad: {std.total_waste_m2} m²")
-                    
-                    self.log(f"--- METODA EFEKTYWNA ({res['width_cm']}cm rolka, {req.quantity} szt.) ---")
+
+                    # Wycena masowa (poprzednia metoda efektywna)
+                    eff = self.calculate_panels_effective(cur_w_g, cur_h_g, effective_v_w, overlap, req.quantity)
+                    self.log(f"--- WYCENA MASOWA ({res['width_cm']}cm rolka, {req.quantity} szt.) ---")
                     for p in eff.panels:
                         self.log(f"  Ilość: {p.quantity}, Rozmiar: {p.width_cm:.1f}×{p.height_cm:.1f} cm")
                     self.log(f"  Łączna liczba brytów: {eff.num_panels}")
                     self.log(f"  Odpad: {eff.total_waste_m2} m²")
+
+                    # Metoda efektywna: optymalny wybór wariantu
+                    eff2_opt = self._select_optimal_variant_efektywna(
+                        cur_w_g, cur_h_g, comp['material_id'], overlap, req.quantity, max_bryt_cm
+                    )
+                    if eff2_opt:
+                        optimal_v, eff2 = eff2_opt
+                        self.log(f"--- METODA EFEKTYWNA (optymalna rolka: {optimal_v['width_cm']}cm, {req.quantity} szt.) ---")
+                        if max_bryt_cm:
+                            self.log(f"  Max szerokość brytu: {max_bryt_cm:.1f} cm")
+                        for p in eff2.panels:
+                            self.log(f"  Ilość: {p.quantity}, Rozmiar: {p.width_cm:.2f}×{p.height_cm:.1f} cm")
+                        self.log(f"  Łączna liczba brytów: {eff2.num_panels}")
+                        self.log(f"  Odpad: {eff2.total_waste_m2} m²")
+                        panel_methods = [std, eff, eff2]
+                    else:
+                        panel_methods = [std, eff]
                 break
         
         return CalculationResponse(

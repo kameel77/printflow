@@ -156,6 +156,7 @@ class ProductTemplateBase(BaseModel):
     default_margin_w_cm: Decimal = Decimal("0.0")
     default_margin_h_cm: Decimal = Decimal("0.0")
     default_overlap_cm: Decimal = Decimal("1.0")
+    max_bryt_width_cm: Optional[Decimal] = None
     is_active: bool = True
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
@@ -172,6 +173,7 @@ class ProductTemplateUpdate(BaseModel):
     default_margin_w_cm: Optional[Decimal] = None
     default_margin_h_cm: Optional[Decimal] = None
     default_overlap_cm: Optional[Decimal] = None
+    max_bryt_width_cm: Optional[Decimal] = None
     is_active: Optional[bool] = None
     components: Optional[List[TemplateComponentCreate]] = None
     tooltip_margin_w_cm: Optional[str] = None
