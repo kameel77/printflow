@@ -295,16 +295,177 @@ class ClientBase(BaseModel):
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
-    company_details: Optional[str] = None
+    company_name: Optional[str] = None
+    company_nip: Optional[str] = None
+    company_address: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class ClientCreate(ClientBase):
     pass
 
 
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company_name: Optional[str] = None
+    company_nip: Optional[str] = None
+    company_address: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class ClientResponse(ClientBase):
     id: int
     created_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
+
+
+# ────────── Offer Schemas ──────────
+
+class OfferStatus(str, Enum):
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    VIEWED = "VIEWED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+
+
+class OfferVariantComponentBase(BaseModel):
+    name_snapshot: str
+    type: str  # MATERIAL / PROCESS / ADJUSTMENT
+    quantity: Optional[Decimal] = None
+    unit: Optional[str] = None
+    unit_price: Optional[Decimal] = None
+    total_price: Decimal
+    visible_to_client: bool = True
+
+
+class OfferVariantComponentResponse(OfferVariantComponentBase):
+    id: int
+    variant_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class OfferVariantBase(BaseModel):
+    name: str
+    is_recommended: bool = False
+    template_id: Optional[int] = None
+    width_cm: Optional[Decimal] = None
+    height_cm: Optional[Decimal] = None
+    quantity: Optional[int] = None
+    total_price_net: Decimal
+    total_price_gross: Decimal
+    calculation_snapshot: Optional[Dict[str, Any]] = None
+    sort_order: int = 0
+
+
+class OfferVariantCreate(OfferVariantBase):
+    components: List[OfferVariantComponentBase] = []
+
+
+class OfferVariantResponse(OfferVariantBase):
+    id: int
+    offer_id: int
+    components: List[OfferVariantComponentResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class OfferTrackingResponse(BaseModel):
+    id: int
+    event_type: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OfferCreate(BaseModel):
+    client_id: Optional[int] = None
+    client: Optional[ClientCreate] = None  # inline new client
+    title: Optional[str] = None
+    internal_note: Optional[str] = None
+    valid_until: Optional[datetime] = None
+    variants: List[OfferVariantCreate] = []
+    send_immediately: bool = False
+
+
+class OfferUpdate(BaseModel):
+    title: Optional[str] = None
+    internal_note: Optional[str] = None
+    valid_until: Optional[datetime] = None
+    client_id: Optional[int] = None
+    status: Optional[OfferStatus] = None
+
+
+class OfferResponse(BaseModel):
+    id: int
+    token: str
+    client_id: Optional[int] = None
+    client: Optional[ClientResponse] = None
+    user_id: Optional[int] = None
+    status: OfferStatus
+    title: Optional[str] = None
+    internal_note: Optional[str] = None
+    valid_until: Optional[datetime] = None
+    client_comment: Optional[str] = None
+    accepted_variant_id: Optional[int] = None
+    sent_at: Optional[datetime] = None
+    viewed_at: Optional[datetime] = None
+    view_count: int = 0
+    responded_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    variants: List[OfferVariantResponse] = []
+    tracking_events: List[OfferTrackingResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class OfferListResponse(BaseModel):
+    id: int
+    token: str
+    client: Optional[ClientResponse] = None
+    status: OfferStatus
+    title: Optional[str] = None
+    view_count: int = 0
+    total_value_net: Optional[Decimal] = None
+    variant_count: int = 0
+    sent_at: Optional[datetime] = None
+    viewed_at: Optional[datetime] = None
+    responded_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OfferPublicResponse(BaseModel):
+    """Public view for client — no internal fields"""
+    token: str
+    title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_email: Optional[str] = None
+    valid_until: Optional[datetime] = None
+    status: OfferStatus
+    client_name: Optional[str] = None
+    variants: List[OfferVariantResponse] = []
+    accepted_variant_id: Optional[int] = None
+    client_comment: Optional[str] = None
+
+
+class OfferClientAction(BaseModel):
+    variant_id: Optional[int] = None
+    comment: Optional[str] = None

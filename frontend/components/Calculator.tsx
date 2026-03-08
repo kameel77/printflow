@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
 
@@ -57,6 +58,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
 export default function Calculator() {
   const { user, logout } = useAuth()
+  const router = useRouter()
   // Input parameters
   const [width, setWidth] = useState<string>('')
   const [height, setHeight] = useState<string>('')
@@ -327,6 +329,46 @@ export default function Calculator() {
                 </svg>
                 Setup produktów
               </Link>
+
+              <Link
+                href="/admin/offers"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Oferty
+              </Link>
+
+              <button
+                onClick={() => {
+                  if (!result) return
+                  const offerData = {
+                    templateId,
+                    templateName: currentTemplate?.name || '',
+                    width,
+                    height,
+                    quantity,
+                    customerType,
+                    selectedOptions,
+                    overlapOverride,
+                    adjustments,
+                    result,
+                    finalTotalNet,
+                    finalTotalGross,
+                    finalMarginPercentage,
+                  }
+                  sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
+                  router.push('/admin/offers/new')
+                }}
+                disabled={!result}
+                className="bg-emerald-600 text-white px-5 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Stwórz ofertę
+              </button>
 
               <button
                 onClick={handleCalculate}

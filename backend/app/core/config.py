@@ -48,6 +48,17 @@ class Settings(BaseSettings):
     # Brand Mode: wally | decostrefa | both
     BRAND_MODE: str = "both"
     
+    # Company Info (for offers/PDFs)
+    COMPANY_NAME: str = "Satto Media"
+    COMPANY_PHONE: str = ""
+    COMPANY_EMAIL: str = ""
+    COMPANY_NIP: str = ""
+    COMPANY_ADDRESS: str = ""
+    
+    # Offer defaults
+    OFFER_DEFAULT_VALIDITY_DAYS: int = 14
+    OFFER_PUBLIC_BASE_URL: str = "http://localhost:3000"
+    
     class Config:
         env_file = ".env"
 

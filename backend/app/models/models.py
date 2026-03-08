@@ -23,6 +23,15 @@ class QuoteStatus(enum.Enum):
     COMPLETED = "COMPLETED"
 
 
+class OfferStatus(enum.Enum):
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    VIEWED = "VIEWED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+
+
 class UserRole(enum.Enum):
     ADMIN = "ADMIN"
     SALES = "SALES"
@@ -138,8 +147,12 @@ class Client(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True)
     phone = Column(String(50))
-    company_details = Column(Text)
+    company_name = Column(String(255))
+    company_nip = Column(String(20))
+    company_address = Column(Text)
+    notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Quote(Base):
@@ -213,6 +226,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     quotes = relationship("Quote", back_populates="user")
+    offers = relationship("Offer", back_populates="user")
 
 
 class AuditLog(Base):
@@ -227,3 +241,80 @@ class AuditLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User")
+
+
+# ────────── Offer Management Models ──────────
+
+class Offer(Base):
+    __tablename__ = "offers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), unique=True, index=True, nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(Enum(OfferStatus), default=OfferStatus.DRAFT)
+    title = Column(String(500))
+    internal_note = Column(Text)
+    valid_until = Column(DateTime(timezone=True))
+    client_comment = Column(Text)
+    accepted_variant_id = Column(Integer, nullable=True)
+    sent_at = Column(DateTime(timezone=True))
+    viewed_at = Column(DateTime(timezone=True))
+    view_count = Column(Integer, default=0)
+    responded_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    client = relationship("Client")
+    user = relationship("User", back_populates="offers")
+    variants = relationship("OfferVariant", back_populates="offer", cascade="all, delete-orphan")
+    tracking_events = relationship("OfferTracking", back_populates="offer", cascade="all, delete-orphan")
+
+
+class OfferVariant(Base):
+    __tablename__ = "offer_variants"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"))
+    name = Column(String(255))
+    is_recommended = Column(Boolean, default=False)
+    template_id = Column(Integer, ForeignKey("product_templates.id"), nullable=True)
+    width_cm = Column(Numeric(10, 2))
+    height_cm = Column(Numeric(10, 2))
+    quantity = Column(Integer)
+    total_price_net = Column(Numeric(12, 2))
+    total_price_gross = Column(Numeric(12, 2))
+    calculation_snapshot = Column(JSON)
+    sort_order = Column(Integer, default=0)
+    
+    offer = relationship("Offer", back_populates="variants")
+    components = relationship("OfferVariantComponent", back_populates="variant", cascade="all, delete-orphan")
+
+
+class OfferVariantComponent(Base):
+    __tablename__ = "offer_variant_components"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    variant_id = Column(Integer, ForeignKey("offer_variants.id", ondelete="CASCADE"))
+    name_snapshot = Column(String(255))
+    type = Column(String(20))  # MATERIAL / PROCESS / ADJUSTMENT
+    quantity = Column(Numeric(12, 4))
+    unit = Column(String(20))
+    unit_price = Column(Numeric(10, 2))
+    total_price = Column(Numeric(10, 2))
+    visible_to_client = Column(Boolean, default=True)
+    
+    variant = relationship("OfferVariant", back_populates="components")
+
+
+class OfferTracking(Base):
+    __tablename__ = "offer_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"))
+    event_type = Column(String(50))  # EMAIL_OPENED, LINK_CLICKED, ACCEPTED, REJECTED
+    ip_address = Column(String(45))
+    user_agent = Column(String(500))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    offer = relationship("Offer", back_populates="tracking_events")
