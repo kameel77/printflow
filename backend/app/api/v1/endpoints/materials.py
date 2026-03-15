@@ -12,6 +12,7 @@ from app.schemas.schemas import (
     MaterialResponse,
     MaterialUpdate,
 )
+from app.models.models import ProductTemplate, TemplateComponent
 
 router = APIRouter()
 
@@ -166,7 +167,8 @@ async def delete_material(
     material_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete material"""
+    """Delete material if not used in any templates"""
+    # 1. Check if material exists
     result = await db.execute(
         select(Material).where(Material.id == material_id)
     )
@@ -174,4 +176,29 @@ async def delete_material(
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
 
+    # 2. Check if material is used in any product templates
+    used_in_components = await db.execute(
+        select(TemplateComponent)
+        .options(selectinload(TemplateComponent.template))
+        .where(TemplateComponent.material_id == material_id)
+    )
+    
+    components = used_in_components.scalars().all()
+    if components:
+        # Collect unique templates
+        templates_map = {}
+        for comp in components:
+            if comp.template and comp.template.id not in templates_map:
+                templates_map[comp.template.id] = comp.template.name
+                
+        if templates_map:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Nie można usunąć materiału, ponieważ jest używany w szablonach produktów.",
+                    "templates": [{"id": tid, "name": tname} for tid, tname in templates_map.items()]
+                }
+            )
+
+    # 3. If not used, delete it
     await db.delete(material)

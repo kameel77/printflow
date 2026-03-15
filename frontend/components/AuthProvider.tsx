@@ -33,7 +33,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext)
 
 // Paths that don't require authentication
-const PUBLIC_PATHS = ['/auth/login', '/auth/callback']
+const PUBLIC_PATHS = ['/auth/login', '/auth/callback', '/offer']
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
