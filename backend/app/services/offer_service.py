@@ -171,13 +171,60 @@ async def update_offer(
     offer: Offer,
     data: OfferUpdate,
 ) -> Offer:
-    """Update an existing offer (draft only)."""
-    update_data = data.model_dump(exclude_unset=True)
+    """Update an existing offer (draft only). If variants supplied, replaces them entirely."""
+    # Update scalar fields
+    update_data = data.model_dump(exclude_unset=True, exclude={'variants', 'send_immediately'})
     for field, value in update_data.items():
         setattr(offer, field, value)
 
+    offer.updated_at = datetime.now(timezone.utc)
+
+    # Replace variants if provided
+    if data.variants is not None:
+        from sqlalchemy import delete as sa_delete
+        # Delete old components first (cascade should handle it, but be explicit)
+        variant_ids = [v.id for v in offer.variants]
+        if variant_ids:
+            await db.execute(
+                sa_delete(OfferVariantComponent).where(
+                    OfferVariantComponent.variant_id.in_(variant_ids)
+                )
+            )
+            await db.execute(
+                sa_delete(OfferVariant).where(OfferVariant.offer_id == offer.id)
+            )
+
+        for v_data in data.variants:
+            variant = OfferVariant(
+                offer_id=offer.id,
+                name=v_data.name,
+                is_recommended=v_data.is_recommended,
+                template_id=v_data.template_id,
+                width_cm=v_data.width_cm,
+                height_cm=v_data.height_cm,
+                quantity=v_data.quantity,
+                total_price_net=v_data.total_price_net,
+                total_price_gross=v_data.total_price_gross,
+                calculation_snapshot=v_data.calculation_snapshot,
+                sort_order=v_data.sort_order,
+            )
+            db.add(variant)
+            await db.flush()
+
+            for c_data in v_data.components:
+                component = OfferVariantComponent(
+                    variant_id=variant.id,
+                    name_snapshot=c_data.name_snapshot,
+                    type=c_data.type,
+                    quantity=c_data.quantity,
+                    unit=c_data.unit,
+                    unit_price=c_data.unit_price,
+                    total_price=c_data.total_price,
+                    visible_to_client=c_data.visible_to_client,
+                )
+                db.add(component)
+
     await db.commit()
-    await db.refresh(offer)
     return await get_offer_by_id(db, offer.id)
 
 

@@ -63,6 +63,7 @@ class MaterialVariant(Base):
     material_id = Column(Integer, ForeignKey("materials.id", ondelete="CASCADE"))
     width_cm = Column(Numeric(10, 2))
     length_cm = Column(Numeric(10, 2))
+    weight_kg = Column(Numeric(10, 2), default=Decimal("0.00"))
     cost_price_per_unit = Column(Numeric(10, 2), nullable=False)
     markup_percentage = Column(Numeric(5, 2), default=Decimal("0.00"))
     unit = Column(String(10), nullable=False)  # 'm2', 'mb', 'pcs'

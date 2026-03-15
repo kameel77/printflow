@@ -117,6 +117,42 @@ export default function OfferDetailPage() {
         }
     }
 
+    const handleEditInCalculator = () => {
+        if (!offer) return
+        // Pick the recommended variant or the first one
+        const variant = offer.variants.find((v) => v.is_recommended) || offer.variants[0]
+        if (!variant) return
+
+        // Pull everything we can from calculation_snapshot
+        const snap = (variant as any).calculation_snapshot || {}
+
+        // Reconstruct adjustments from components tagged as ADJUSTMENT
+        const adjustments = variant.components
+            .filter((c) => c.type === 'ADJUSTMENT')
+            .map((c) => ({
+                id: String(Date.now() + Math.random()),
+                desc: c.name_snapshot,
+                type: c.total_price < 0 ? 'percentage' : 'amount',
+                value: String(Math.abs(c.total_price)),
+            }))
+
+        const editData = {
+            templateId: (variant as any).template_id || snap.template_id || '',
+            width: variant.width_cm ? String(Number(variant.width_cm)) : '',
+            height: variant.height_cm ? String(Number(variant.height_cm)) : '',
+            quantity: variant.quantity ? String(variant.quantity) : '1',
+            customerType: snap.customerType || 'B2C',
+            selectedOptions: snap.selected_options || [],
+            overlapOverride: snap.overlap_used_cm ? String(snap.overlap_used_cm) : '',
+            adjustments,
+        }
+
+        sessionStorage.setItem('editOfferCalculation', JSON.stringify(editData))
+        // Also carry the offer id so we can update it after re-calculation
+        sessionStorage.setItem('editingOfferId', String(offer.id))
+        router.push('/')
+    }
+
     const publicLink = offer ? `${PUBLIC_BASE}/offer/${offer.token}` : ''
 
     const copyLink = () => {
@@ -166,6 +202,17 @@ export default function OfferDetailPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            {offer.status === 'DRAFT' && (
+                                <button
+                                    onClick={handleEditInCalculator}
+                                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edytuj w kalkulatorze
+                                </button>
+                            )}
                             {offer.status === 'DRAFT' && (
                                 <button onClick={handleSend} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,9 +381,9 @@ export default function OfferDetailPage() {
                                     <div key={evt.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                                         <div className="flex items-center gap-3">
                                             <span className={`w-2 h-2 rounded-full ${evt.event_type === 'ACCEPTED' ? 'bg-green-500' :
-                                                    evt.event_type === 'REJECTED' ? 'bg-red-500' :
-                                                        evt.event_type === 'LINK_CLICKED' ? 'bg-blue-500' :
-                                                            'bg-gray-400'
+                                                evt.event_type === 'REJECTED' ? 'bg-red-500' :
+                                                    evt.event_type === 'LINK_CLICKED' ? 'bg-blue-500' :
+                                                        'bg-gray-400'
                                                 }`} />
                                             <span className="text-sm text-gray-900">
                                                 {evt.event_type === 'LINK_CLICKED' ? 'Wyświetlenie oferty' :

@@ -34,6 +34,7 @@ class MaterialVariantBase(BaseModel):
     external_id: Optional[str] = None
     width_cm: Optional[Decimal] = None
     length_cm: Optional[Decimal] = None
+    weight_kg: Decimal = Decimal("0.00")
     cost_price_per_unit: Decimal
     markup_percentage: Decimal = Decimal("0.00")
     unit: str
@@ -406,6 +407,8 @@ class OfferUpdate(BaseModel):
     valid_until: Optional[datetime] = None
     client_id: Optional[int] = None
     status: Optional[OfferStatus] = None
+    variants: Optional[List[OfferVariantCreate]] = None
+    send_immediately: bool = False
 
 
 class OfferResponse(BaseModel):

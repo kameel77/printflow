@@ -90,11 +90,32 @@ export default function Calculator() {
     fetchTemplates()
   }, [])
 
+  // Restore state when editing a draft offer (triggered after templates load)
+  useEffect(() => {
+    if (templates.length === 0) return // wait for templates
+    const stored = sessionStorage.getItem('editOfferCalculation')
+    if (!stored) return
+    try {
+      const d = JSON.parse(stored)
+      sessionStorage.removeItem('editOfferCalculation')
+      if (d.templateId) setTemplateId(String(d.templateId))
+      if (d.width) setWidth(String(d.width))
+      if (d.height) setHeight(String(d.height))
+      if (d.quantity) setQuantity(String(d.quantity))
+      if (d.customerType) setCustomerType(d.customerType)
+      if (d.selectedOptions) setSelectedOptions(d.selectedOptions)
+      if (d.overlapOverride) setOverlapOverride(String(d.overlapOverride))
+      if (d.adjustments) setAdjustments(d.adjustments)
+    } catch (e) {
+      console.error('Failed to restore offer state:', e)
+    }
+  }, [templates])
+
   // Fetch template details when templateId changes
   useEffect(() => {
     if (templateId) {
       fetchTemplateDetails(parseInt(templateId))
-      setSelectedOptions([]) // Reset options when template changes
+      // Don't reset selectedOptions here if we're restoring from an edit
     } else {
       setCurrentTemplate(null)
     }
@@ -343,6 +364,7 @@ export default function Calculator() {
               <button
                 onClick={() => {
                   if (!result) return
+                  const editingOfferId = sessionStorage.getItem('editingOfferId')
                   const offerData = {
                     templateId,
                     templateName: currentTemplate?.name || '',
@@ -357,17 +379,28 @@ export default function Calculator() {
                     finalTotalNet,
                     finalTotalGross,
                     finalMarginPercentage,
+                    editingOfferId: editingOfferId || null,
                   }
                   sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
-                  router.push('/admin/offers/new')
+                  if (editingOfferId) {
+                    sessionStorage.removeItem('editingOfferId')
+                    router.push(`/admin/offers/${editingOfferId}/edit`)
+                  } else {
+                    router.push('/admin/offers/new')
+                  }
                 }}
                 disabled={!result}
-                className="bg-emerald-600 text-white px-5 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors"
+                className={`${typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                  } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                Stwórz ofertę
+                {typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                  ? 'Zaktualizuj ofertę'
+                  : 'Stwórz ofertę'}
               </button>
 
               <button

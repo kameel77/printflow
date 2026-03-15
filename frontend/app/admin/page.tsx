@@ -16,6 +16,7 @@ interface MaterialVariant {
     external_id?: string | null
     width_cm: number | null
     length_cm?: number | null
+    weight_kg?: number | null
     cost_price_per_unit: number
     markup_percentage: number
     unit: string
@@ -115,6 +116,7 @@ export default function AdminPage() {
     const [showMaterialModal, setShowMaterialModal] = useState(false)
     const [showMaterialCSVModal, setShowMaterialCSVModal] = useState(false)
     const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
+    const [materialDeleteErrorTemplates, setMaterialDeleteErrorTemplates] = useState<{id: number, name: string}[]>([])
 
     // Modal state — Processes
     const [showProcessModal, setShowProcessModal] = useState(false)
@@ -163,7 +165,11 @@ export default function AdminPage() {
             await axios.delete(`${API_URL}/materials/${id}`)
             setMaterials((prev) => prev.filter((m) => m.id !== id))
         } catch (err: any) {
-            alert(err.response?.data?.detail || 'Błąd usuwania')
+            if (err.response?.status === 400 && err.response?.data?.detail?.templates) {
+                setMaterialDeleteErrorTemplates(err.response.data.detail.templates)
+            } else {
+                alert(err.response?.data?.detail || 'Błąd usuwania')
+            }
         }
     }
 
@@ -847,6 +853,53 @@ export default function AdminPage() {
                     onClose={() => setShowProcessModal(false)}
                 />
             )}
+
+            {/* Material Delete Error Modal */}
+            {materialDeleteErrorTemplates.length > 0 && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                        <div className="px-6 py-4 border-b bg-red-50 flex items-center gap-3">
+                            <div className="p-2 bg-red-100 rounded-full text-red-600">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-lg font-semibold text-red-900">Nie można usunąć materiału</h2>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-700 mb-4">
+                                Ten materiał jest używany w następujących szablonach produktów. Musisz najpierw usunąć materiał z tych szablonów, aby móc go usunąć z bazy głównej.
+                            </p>
+                            <ul className="space-y-2 mb-6">
+                                {materialDeleteErrorTemplates.map((t) => (
+                                    <li key={t.id}>
+                                        <button
+                                            onClick={() => {
+                                                setMaterialDeleteErrorTemplates([])
+                                                const fullTemplate = templates.find(template => template.id === t.id)
+                                                if (fullTemplate) {
+                                                    openEditTemplate(fullTemplate)
+                                                }
+                                            }}
+                                            className="w-full text-left px-4 py-2 bg-gray-50 hover:bg-blue-50 hover:text-blue-700 text-sm font-medium text-gray-900 rounded-lg transition-colors border border-gray-100"
+                                        >
+                                            {t.name}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => setMaterialDeleteErrorTemplates([])}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    Zamknij
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -1153,6 +1206,7 @@ function MaterialModal({
         external_id: string
         width_cm: string
         length_cm: string
+        weight_kg: string
         cost_price_per_unit: string
         markup_percentage: string
         unit: string
@@ -1168,6 +1222,7 @@ function MaterialModal({
             external_id: v.external_id || '',
             width_cm: v.width_cm != null ? String(v.width_cm) : '',
             length_cm: v.length_cm != null ? String(v.length_cm) : '',
+            weight_kg: v.weight_kg != null ? String(Number(v.weight_kg)) : '0.00',
             cost_price_per_unit: String(Number(v.cost_price_per_unit)),
             markup_percentage: String(Number(v.markup_percentage)),
             unit: v.unit,
@@ -1178,12 +1233,12 @@ function MaterialModal({
             tooltip_margin_w_cm: v.tooltip_margin_w_cm || '',
             tooltip_margin_h_cm: v.tooltip_margin_h_cm || '',
             tooltip_external_id: v.tooltip_external_id || '',
-        })) || [{ external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }]
+        })) || [{ external_id: '', width_cm: '', length_cm: '', weight_kg: '0.00', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }]
     )
     const [saving, setSaving] = useState(false)
 
     const addVariant = () => {
-        setVariants((prev) => [...prev, { external_id: '', width_cm: '', length_cm: '', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }])
+        setVariants((prev) => [...prev, { external_id: '', width_cm: '', length_cm: '', weight_kg: '0.00', cost_price_per_unit: '0', markup_percentage: '0', unit: 'm2', margin_w_cm: '0', margin_h_cm: '0', is_active: true, tooltip_markup_percentage: '', tooltip_margin_w_cm: '', tooltip_margin_h_cm: '', tooltip_external_id: '' }])
     }
 
     const removeVariant = (index: number) => {
@@ -1207,6 +1262,7 @@ function MaterialModal({
                 external_id: v.external_id || null,
                 width_cm: v.width_cm ? parseFloat(v.width_cm) : null,
                 length_cm: v.length_cm ? parseFloat(v.length_cm) : null,
+                weight_kg: v.weight_kg ? parseFloat(v.weight_kg) : 0,
                 cost_price_per_unit: parseFloat(v.cost_price_per_unit),
                 markup_percentage: parseFloat(v.markup_percentage),
                 unit: v.unit,
@@ -1290,7 +1346,7 @@ function MaterialModal({
                                     )}
                                 </div>
                                 <div className="grid grid-cols-5 gap-3">
-                                    <div className="col-span-2">
+                                    <div className="col-span-1">
                                         <LabelWithTooltip label="Wariant ID" tooltipText={v.tooltip_external_id || undefined} labelClassName="text-xs text-gray-500 font-normal">
                                             <input type="text" value={v.external_id} onChange={(e) => updateVariant(index, 'external_id', e.target.value.trim())} className={inputClass} placeholder="np. 00001" />
                                         </LabelWithTooltip>
@@ -1310,6 +1366,10 @@ function MaterialModal({
                                             <option value="mb">mb</option>
                                             <option value="szt">szt</option>
                                         </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Waga (kg)</label>
+                                        <input type="number" value={v.weight_kg} onChange={(e) => updateVariant(index, 'weight_kg', e.target.value)} step="0.01" className={inputClass} placeholder="0.00" />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Cena/jedn.</label>
@@ -1612,6 +1672,7 @@ function MaterialCSVImportModal({
                     markup_percentage: row['Narzut %'] ? parseFloat(row['Narzut %'].replace(',', '.')) : 0,
                     margin_w_cm: row['Margines W'] ? parseFloat(row['Margines W'].replace(',', '.')) : 0,
                     margin_h_cm: row['Margines H'] ? parseFloat(row['Margines H'].replace(',', '.')) : 0,
+                    weight_kg: 0,
                     is_active: true
                 })
             }
