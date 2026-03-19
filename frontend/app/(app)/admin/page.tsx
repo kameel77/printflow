@@ -289,7 +289,7 @@ export default function AdminPage() {
         { id: 'users', label: 'Użytkownicy', count: users.length },
     ]
 
-    const tabs = allTabs.filter(tab => tab.id !== 'users' || user?.role === 'ADMIN')
+    const tabs = allTabs.filter(tab => tab.id !== 'users' || user?.role?.toLowerCase() === 'admin')
 
     return (
         <div className="min-h-screen bg-gray-50">
