@@ -21,7 +21,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 interface OfferFull {
     id: number
     token: string
-    client: { id: number; name: string; email: string | null; phone: string | null; company_name: string | null; company_nip: string | null } | null
+    client: { id: number; name: string; email: string | null; phone: string | null; company_name: string | null; company_nip: string | null; company_address: string | null; notes: string | null } | null
+    user?: { id: number; full_name?: string; email: string } | null
     user_id: number | null
     status: string
     title: string | null
@@ -72,6 +73,9 @@ export default function OfferDetailPage() {
     const [offer, setOffer] = useState<OfferFull | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isEditingClient, setIsEditingClient] = useState(false)
+    const [editingClientData, setEditingClientData] = useState<any>(null)
+    const [savingClient, setSavingClient] = useState(false)
 
     const offerId = params.id as string
 
@@ -114,6 +118,34 @@ export default function OfferDetailPage() {
             router.push(`/admin/offers/${res.data.id}`)
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd duplikowania')
+        }
+    }
+
+    const handleEditClientClick = () => {
+        if (!offer?.client) return
+        setEditingClientData({
+            name: offer.client.name || '',
+            email: offer.client.email || '',
+            phone: offer.client.phone || '',
+            company_name: offer.client.company_name || '',
+            company_nip: offer.client.company_nip || '',
+            company_address: offer.client.company_address || '',
+            notes: offer.client.notes || ''
+        })
+        setIsEditingClient(true)
+    }
+
+    const handleSaveClient = async () => {
+        if (!offer?.client) return
+        setSavingClient(true)
+        try {
+            await axios.patch(`${API_URL}/clients/${offer.client.id}`, editingClientData, { headers: getAuthHeaders() })
+            setIsEditingClient(false)
+            fetchOffer()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu danych klienta')
+        } finally {
+            setSavingClient(false)
         }
     }
 
@@ -240,14 +272,48 @@ export default function OfferDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Client */}
                     <div className="bg-white rounded-xl shadow-sm border p-5">
-                        <h3 className="text-sm font-medium text-gray-500 mb-3">Klient</h3>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-sm font-medium text-gray-500">Klient</h3>
+                            {offer.client && !isEditingClient && (
+                                <button onClick={handleEditClientClick} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Edytuj</button>
+                            )}
+                        </div>
                         {offer.client ? (
-                            <div>
-                                <p className="font-semibold text-gray-900">{offer.client.name}</p>
-                                <p className="text-sm text-gray-600">{offer.client.email || '—'}</p>
-                                <p className="text-sm text-gray-600">{offer.client.phone || '—'}</p>
-                                {offer.client.company_name && <p className="text-sm text-gray-500 mt-1">{offer.client.company_name}</p>}
-                            </div>
+                            isEditingClient ? (
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Imię i nazwisko</label>
+                                        <input type="text" value={editingClientData?.name} onChange={e => setEditingClientData({...editingClientData, name: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Firma</label>
+                                        <input type="text" value={editingClientData?.company_name} onChange={e => setEditingClientData({...editingClientData, company_name: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">NIP</label>
+                                        <input type="text" value={editingClientData?.company_nip} onChange={e => setEditingClientData({...editingClientData, company_nip: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Email</label>
+                                        <input type="email" value={editingClientData?.email} onChange={e => setEditingClientData({...editingClientData, email: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Telefon</label>
+                                        <input type="text" value={editingClientData?.phone} onChange={e => setEditingClientData({...editingClientData, phone: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <button onClick={handleSaveClient} disabled={savingClient} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{savingClient ? 'Zapisywanie...' : 'Zapisz'}</button>
+                                        <button onClick={() => setIsEditingClient(false)} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">Anuluj</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="font-semibold text-gray-900">{offer.client.name}</p>
+                                    <p className="text-sm text-gray-600">{offer.client.email || '—'}</p>
+                                    <p className="text-sm text-gray-600">{offer.client.phone || '—'}</p>
+                                    {offer.client.company_name && <p className="text-sm text-gray-500 mt-1">{offer.client.company_name} {offer.client.company_nip ? `(NIP: ${offer.client.company_nip})` : ''}</p>}
+                                </div>
+                            )
                         ) : (
                             <p className="text-gray-400">Brak danych klienta</p>
                         )}
@@ -287,6 +353,10 @@ export default function OfferDetailPage() {
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Utworzona:</span>
                                 <span className="text-gray-900">{formatDate(offer.created_at)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Przygotował(a):</span>
+                                <span className="text-gray-900">{offer.user ? offer.user.full_name || offer.user.email : 'Brak danych'}</span>
                             </div>
                             {offer.internal_note && (
                                 <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-yellow-800 text-xs">

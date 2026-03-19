@@ -327,6 +327,14 @@ class ClientResponse(ClientBase):
 
 # ────────── Offer Schemas ──────────
 
+class OfferUserResponse(BaseModel):
+    id: int
+    full_name: Optional[str] = None
+    email: str
+    
+    class Config:
+        from_attributes = True
+
 class OfferStatus(str, Enum):
     DRAFT = "DRAFT"
     SENT = "SENT"
@@ -417,6 +425,7 @@ class OfferResponse(BaseModel):
     client_id: Optional[int] = None
     client: Optional[ClientResponse] = None
     user_id: Optional[int] = None
+    user: Optional[OfferUserResponse] = None
     status: OfferStatus
     title: Optional[str] = None
     internal_note: Optional[str] = None
@@ -440,6 +449,7 @@ class OfferListResponse(BaseModel):
     id: int
     token: str
     client: Optional[ClientResponse] = None
+    user: Optional[OfferUserResponse] = None
     status: OfferStatus
     title: Optional[str] = None
     view_count: int = 0

@@ -22,13 +22,14 @@ router = APIRouter()
 @router.get("", response_model=List[OfferListResponse])
 async def api_list_offers(
     status: Optional[str] = Query(None, description="Filter by status"),
+    client_id: Optional[int] = Query(None, description="Filter by client ID"),
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """List all offers with optional status filter."""
-    offers = await list_offers(db, status=status, skip=skip, limit=limit)
+    offers = await list_offers(db, status=status, client_id=client_id, skip=skip, limit=limit)
     result = []
     for offer in offers:
         # Calculate total value from first variant (or sum)
@@ -44,6 +45,7 @@ async def api_list_offers(
             id=offer.id,
             token=offer.token,
             client=offer.client,
+            user=offer.user,
             status=OfferStatusSchema(offer.status.value),
             title=offer.title,
             view_count=offer.view_count or 0,
