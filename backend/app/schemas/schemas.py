@@ -299,6 +299,9 @@ class ClientBase(BaseModel):
     company_name: Optional[str] = None
     company_nip: Optional[str] = None
     company_address: Optional[str] = None
+    company_street: Optional[str] = None
+    company_postal_code: Optional[str] = None
+    company_city: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -313,6 +316,9 @@ class ClientUpdate(BaseModel):
     company_name: Optional[str] = None
     company_nip: Optional[str] = None
     company_address: Optional[str] = None
+    company_street: Optional[str] = None
+    company_postal_code: Optional[str] = None
+    company_city: Optional[str] = None
     notes: Optional[str] = None
 
 

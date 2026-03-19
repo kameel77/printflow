@@ -21,7 +21,19 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 interface OfferFull {
     id: number
     token: string
-    client: { id: number; name: string; email: string | null; phone: string | null; company_name: string | null; company_nip: string | null; company_address: string | null; notes: string | null } | null
+    client: {
+        id: number;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        company_name: string | null;
+        company_nip: string | null;
+        company_address: string | null;
+        company_street: string | null;
+        company_postal_code: string | null;
+        company_city: string | null;
+        notes: string | null;
+    } | null;
     user?: { id: number; full_name?: string; email: string } | null
     user_id: number | null
     status: string
@@ -122,19 +134,22 @@ export default function OfferDetailPage() {
     }
 
     const handleEditClientClick = () => {
-        if (!offer?.client) return
-        setEditingClientData({
-            name: offer.client.name || '',
-            email: offer.client.email || '',
-            phone: offer.client.phone || '',
-            company_name: offer.client.company_name || '',
-            company_nip: offer.client.company_nip || '',
-            company_address: offer.client.company_address || '',
-            notes: offer.client.notes || ''
-        })
-        setIsEditingClient(true)
+        if (offer?.client) {
+            setEditingClientData({
+                name: offer.client.name || '',
+                email: offer.client.email || '',
+                phone: offer.client.phone || '',
+                company_name: offer.client.company_name || '',
+                company_nip: offer.client.company_nip || '',
+                company_address: offer.client.company_address || '',
+                company_street: offer.client.company_street || '',
+                company_postal_code: offer.client.company_postal_code || '',
+                company_city: offer.client.company_city || '',
+                notes: offer.client.notes || ''
+            })
+            setIsEditingClient(true)
+        }
     }
-
     const handleSaveClient = async () => {
         if (!offer?.client) return
         setSavingClient(true)
@@ -293,6 +308,24 @@ export default function OfferDetailPage() {
                                         <label className="block text-xs text-gray-500 mb-1">NIP</label>
                                         <input type="text" value={editingClientData?.company_nip} onChange={e => setEditingClientData({...editingClientData, company_nip: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
                                     </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs text-gray-500 mb-1">Ulica i numer</label>
+                                            <input type="text" value={editingClientData.company_street || ''} onChange={e => setEditingClientData({...editingClientData, company_street: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Kod pocztowy</label>
+                                            <input type="text" value={editingClientData.company_postal_code || ''} onChange={e => setEditingClientData({...editingClientData, company_postal_code: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Miejscowość</label>
+                                            <input type="text" value={editingClientData.company_city || ''} onChange={e => setEditingClientData({...editingClientData, company_city: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs text-gray-500 mb-1">Notatki</label>
+                                            <textarea rows={3} value={editingClientData.notes || ''} onChange={e => setEditingClientData({...editingClientData, notes: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                    </div>
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Email</label>
                                         <input type="email" value={editingClientData?.email} onChange={e => setEditingClientData({...editingClientData, email: e.target.value})} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
@@ -312,6 +345,20 @@ export default function OfferDetailPage() {
                                     <p className="text-sm text-gray-600">{offer.client.email || '—'}</p>
                                     <p className="text-sm text-gray-600">{offer.client.phone || '—'}</p>
                                     {offer.client.company_name && <p className="text-sm text-gray-500 mt-1">{offer.client.company_name} {offer.client.company_nip ? `(NIP: ${offer.client.company_nip})` : ''}</p>}
+                                    {(offer.client.company_street || offer.client.company_postal_code || offer.client.company_city || offer.client.company_address) && (
+                                        <div className="mt-2">
+                                            <span className="block text-sm font-medium text-gray-500 mb-1">Adres firmy</span>
+                                            {offer.client.company_street || offer.client.company_city || offer.client.company_address ? (
+                                                <span className="block text-gray-900 whitespace-pre-wrap">
+                                                    {offer.client.company_street && <>{offer.client.company_street}<br/></>}
+                                                    {(offer.client.company_postal_code || offer.client.company_city) && <>{offer.client.company_postal_code} {offer.client.company_city}<br/></>}
+                                                    {offer.client.company_address && !offer.client.company_street && !offer.client.company_city && <>{offer.client.company_address}</>}
+                                                </span>
+                                            ) : (
+                                                <span className="block text-gray-900">—</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )
                         ) : (

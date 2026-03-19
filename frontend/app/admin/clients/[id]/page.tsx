@@ -16,6 +16,9 @@ interface ClientFull {
     company_name: string | null
     company_nip: string | null
     company_address: string | null
+    company_street: string | null
+    company_postal_code: string | null
+    company_city: string | null
     notes: string | null
     created_at: string
 }
@@ -47,6 +50,9 @@ export default function ClientDetailPage() {
     const [offers, setOffers] = useState<OfferListItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isEditing, setIsEditing] = useState(false)
+    const [savingClient, setSavingClient] = useState(false)
+    const [editingData, setEditingData] = useState<Partial<ClientFull>>({})
 
     const clientId = params.id as string
 
@@ -77,6 +83,37 @@ export default function ClientDetailPage() {
             fetchData()
         }
     }, [clientId, fetchData])
+
+    const handleEditClick = () => {
+        if (client) {
+            setEditingData({
+                name: client.name || '',
+                email: client.email || '',
+                phone: client.phone || '',
+                company_name: client.company_name || '',
+                company_nip: client.company_nip || '',
+                company_address: client.company_address || '',
+                company_street: client.company_street || '',
+                company_postal_code: client.company_postal_code || '',
+                company_city: client.company_city || '',
+                notes: client.notes || ''
+            })
+            setIsEditing(true)
+        }
+    }
+
+    const handleSave = async () => {
+        setSavingClient(true)
+        try {
+            await axios.patch(`${API_URL}/clients/${clientId}`, editingData, { headers: getAuthHeaders() })
+            setIsEditing(false)
+            fetchData()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu danych klienta')
+        } finally {
+            setSavingClient(false)
+        }
+    }
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pl-PL', {
@@ -148,42 +185,105 @@ export default function ClientDetailPage() {
                     <div className="space-y-6">
                         {/* Client Details Card */}
                         <div className="bg-white rounded-xl shadow-sm border p-6">
-                            <h2 className="text-lg font-bold text-gray-900 mb-4">Dane klienta</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">Imię i nazwisko</span>
-                                        <span className="block text-gray-900">{client.name}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">Firma</span>
-                                        <span className="block text-gray-900">{client.company_name || '—'} {client.company_nip ? `(NIP: ${client.company_nip})` : ''}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">Adres firmy</span>
-                                        <span className="block text-gray-900 whitespace-pre-wrap">{client.company_address || '—'}</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">E-mail</span>
-                                        <span className="block text-gray-900">{client.email || '—'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">Telefon</span>
-                                        <span className="block text-gray-900">{client.phone || '—'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-sm font-medium text-gray-500 mb-1">Data dodania</span>
-                                        <span className="block text-gray-900">{formatDate(client.created_at)}</span>
-                                    </div>
-                                </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-bold text-gray-900">Dane klienta</h2>
+                                {!isEditing && (
+                                    <button onClick={handleEditClick} className="text-sm text-blue-600 hover:text-blue-700 font-medium">Edytuj dane</button>
+                                )}
                             </div>
-                            {client.notes && (
-                                <div className="mt-6 pt-6 border-t border-gray-100">
-                                    <span className="block text-sm font-medium text-gray-500 mb-2">Notatki</span>
-                                    <span className="block text-sm text-gray-700 whitespace-pre-wrap">{client.notes}</span>
+                            
+                            {isEditing ? (
+                                <div className="space-y-4 max-w-2xl">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Imię i nazwisko</label>
+                                            <input type="text" value={editingData.name || ''} onChange={e => setEditingData({...editingData, name: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                            <input type="email" value={editingData.email || ''} onChange={e => setEditingData({...editingData, email: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                                            <input type="text" value={editingData.phone || ''} onChange={e => setEditingData({...editingData, phone: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Firma</label>
+                                            <input type="text" value={editingData.company_name || ''} onChange={e => setEditingData({...editingData, company_name: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">NIP</label>
+                                            <input type="text" value={editingData.company_nip || ''} onChange={e => setEditingData({...editingData, company_nip: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Ulica i numer</label>
+                                            <input type="text" value={editingData.company_street || ''} onChange={e => setEditingData({...editingData, company_street: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy</label>
+                                            <input type="text" value={editingData.company_postal_code || ''} onChange={e => setEditingData({...editingData, company_postal_code: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Miejscowość</label>
+                                            <input type="text" value={editingData.company_city || ''} onChange={e => setEditingData({...editingData, company_city: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notatki</label>
+                                            <textarea rows={3} value={editingData.notes || ''} onChange={e => setEditingData({...editingData, notes: e.target.value})} className="w-full border border-gray-300 rounded-md p-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 pt-4 border-t border-gray-100">
+                                        <button onClick={handleSave} disabled={savingClient} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{savingClient ? 'Zapisywanie...' : 'Zapisz zmiany'}</button>
+                                        <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">Anuluj</button>
+                                    </div>
                                 </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">Imię i nazwisko</span>
+                                                <span className="block text-gray-900">{client.name}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">Firma</span>
+                                                <span className="block text-gray-900">{client.company_name || '—'} {client.company_nip ? `(NIP: ${client.company_nip})` : ''}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">Adres firmy</span>
+                                                {client.company_street || client.company_city || client.company_address ? (
+                                                    <span className="block text-gray-900 whitespace-pre-wrap">
+                                                        {client.company_street && <>{client.company_street}<br/></>}
+                                                        {(client.company_postal_code || client.company_city) && <>{client.company_postal_code} {client.company_city}<br/></>}
+                                                        {client.company_address && !client.company_street && !client.company_city && <>{client.company_address}</>}
+                                                    </span>
+                                                ) : (
+                                                    <span className="block text-gray-900">—</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">E-mail</span>
+                                                <span className="block text-gray-900">{client.email || '—'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">Telefon</span>
+                                                <span className="block text-gray-900">{client.phone || '—'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-sm font-medium text-gray-500 mb-1">Data dodania</span>
+                                                <span className="block text-gray-900">{formatDate(client.created_at)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {client.notes && (
+                                        <div className="mt-6 pt-6 border-t border-gray-100">
+                                            <span className="block text-sm font-medium text-gray-500 mb-2">Notatki</span>
+                                            <span className="block text-sm text-gray-700 whitespace-pre-wrap">{client.notes}</span>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
 
