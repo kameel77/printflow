@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
+import Header from '@/components/Header'
 
 interface CalculationResult {
   total_price_net: number
@@ -323,121 +324,61 @@ export default function Calculator() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/icon.png"
-                alt="Wally"
-                width={48}
-                height={48}
-                className="rounded-lg"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Printflow MIS</h1>
-                <p className="text-sm text-gray-500 mt-1">Kalkulacja prod. masowa</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Setup produktów
-              </Link>
+      <Header 
+        actions={
+          <>
+            <button
+              onClick={() => {
+                if (!result) return
+                const editingOfferId = sessionStorage.getItem('editingOfferId')
+                const offerData = {
+                  templateId,
+                  templateName: currentTemplate?.name || '',
+                  width,
+                  height,
+                  quantity,
+                  customerType,
+                  selectedOptions,
+                  overlapOverride,
+                  adjustments,
+                  result,
+                  finalTotalNet,
+                  finalTotalGross,
+                  finalMarginPercentage,
+                  editingOfferId: editingOfferId || null,
+                }
+                sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
+                if (editingOfferId) {
+                  sessionStorage.removeItem('editingOfferId')
+                  router.push(`/admin/offers/${editingOfferId}/edit`)
+                } else {
+                  router.push('/admin/offers/new')
+                }
+              }}
+              disabled={!result}
+              className={`${typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+                } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              {typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                ? 'Zaktualizuj ofertę'
+                : 'Stwórz ofertę'}
+            </button>
 
-              <Link
-                href="/admin/offers"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Oferty
-              </Link>
-
-              <Link
-                href="/admin/clients"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Klienci
-              </Link>
-
-              <button
-                onClick={() => {
-                  if (!result) return
-                  const editingOfferId = sessionStorage.getItem('editingOfferId')
-                  const offerData = {
-                    templateId,
-                    templateName: currentTemplate?.name || '',
-                    width,
-                    height,
-                    quantity,
-                    customerType,
-                    selectedOptions,
-                    overlapOverride,
-                    adjustments,
-                    result,
-                    finalTotalNet,
-                    finalTotalGross,
-                    finalMarginPercentage,
-                    editingOfferId: editingOfferId || null,
-                  }
-                  sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
-                  if (editingOfferId) {
-                    sessionStorage.removeItem('editingOfferId')
-                    router.push(`/admin/offers/${editingOfferId}/edit`)
-                  } else {
-                    router.push('/admin/offers/new')
-                  }
-                }}
-                disabled={!result}
-                className={`${typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                  } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                {typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
-                  ? 'Zaktualizuj ofertę'
-                  : 'Stwórz ofertę'}
-              </button>
-
-              <button
-                onClick={handleCalculate}
-                disabled={loading || !canCalculate}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {loading ? 'Obliczanie...' : 'Przelicz'}
-              </button>
-              {user && (
-                <div className="flex items-center gap-2 ml-2 pl-4 border-l border-gray-200">
-                  <span className="text-xs text-gray-500 hidden md:inline">{user.email}</span>
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-500 hover:text-red-600 transition-colors p-1"
-                    title="Wyloguj"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+            <button
+              onClick={handleCalculate}
+              disabled={loading || !canCalculate}
+              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {loading ? 'Obliczanie...' : 'Przelicz'}
+            </button>
+          </>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

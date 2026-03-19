@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
+import Header from '@/components/Header'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -89,7 +90,7 @@ export default function OfferDetailPage() {
     const [editingClientData, setEditingClientData] = useState<any>(null)
     const [savingClient, setSavingClient] = useState(false)
 
-    const offerId = params.id as string
+    const offerId = params?.id as string
 
     const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem('access_token')
@@ -231,56 +232,48 @@ export default function OfferDetailPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin/offers" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </Link>
-                            <div>
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-xl font-bold text-gray-900">Oferta #{String(offer.id).padStart(3, '0')}</h1>
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusCfg.color}`}>{statusCfg.label}</span>
-                                </div>
-                                <p className="text-sm text-gray-500 mt-0.5">{offer.title || 'Bez tytułu'}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {offer.status === 'DRAFT' && (
-                                <button
-                                    onClick={handleEditInCalculator}
-                                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    Edytuj w kalkulatorze
-                                </button>
-                            )}
-                            {offer.status === 'DRAFT' && (
-                                <button onClick={handleSend} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                    </svg>
-                                    Wyślij
-                                </button>
-                            )}
-                            <button onClick={handleDuplicate} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                Duplikuj
-                            </button>
-                            <button onClick={copyLink} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                </svg>
-                                Kopiuj link
-                            </button>
-                        </div>
+            <Header
+                title={
+                    <div className="flex items-center gap-3">
+                        <span>Oferta #{String(offer.id).padStart(3, '0')}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusCfg.color}`}>{statusCfg.label}</span>
                     </div>
-                </div>
-            </div>
+                }
+                subtitle={offer.title || 'Bez tytułu'}
+                backHref="/admin/offers"
+                actions={
+                    <>
+                        {offer.status === 'DRAFT' && (
+                            <button
+                                onClick={handleEditInCalculator}
+                                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edytuj w kalkulatorze
+                            </button>
+                        )}
+                        {offer.status === 'DRAFT' && (
+                            <button onClick={handleSend} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                Wyślij
+                            </button>
+                        )}
+                        <button onClick={handleDuplicate} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Duplikuj
+                        </button>
+                        <button onClick={copyLink} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Kopiuj link
+                        </button>
+                    </>
+                }
+            />
 
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
                 {/* Info grid */}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
+import Header from '@/components/Header'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
@@ -54,7 +55,7 @@ export default function ClientDetailPage() {
     const [savingClient, setSavingClient] = useState(false)
     const [editingData, setEditingData] = useState<Partial<ClientFull>>({})
 
-    const clientId = params.id as string
+    const clientId = params?.id as string
 
     const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem('access_token')
@@ -136,41 +137,11 @@ export default function ClientDetailPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin/clients" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Karta klienta</h1>
-                                <p className="text-sm text-gray-500 mt-1">{loading ? 'Wczytywanie...' : client?.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Link href="/" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                Kalkulator
-                            </Link>
-                            <Link href="/admin/offers" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                                Oferty
-                            </Link>
-                            {user && (
-                                <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-                                    <span className="text-xs text-gray-500 hidden md:inline">{user.email}</span>
-                                    <button onClick={logout} className="text-sm text-gray-500 hover:text-red-600 transition-colors p-1" title="Wyloguj">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Karta klienta"
+                subtitle={loading ? 'Wczytywanie...' : client?.name}
+                backHref="/admin/clients"
+            />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {error && (

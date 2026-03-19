@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
+import Header from '@/components/Header'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 const VAT_RATE = 1.23
@@ -247,42 +248,32 @@ export default function NewOfferPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin/offers" className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </Link>
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900">Nowa oferta</h1>
-                                <p className="text-sm text-gray-500">Przygotuj ofertę dla klienta</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => handleSave(false)}
-                                disabled={saving || variants.length === 0}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
-                            >
-                                {saving ? 'Zapisywanie...' : 'Zapisz szkic'}
-                            </button>
-                            <button
-                                onClick={() => handleSave(true)}
-                                disabled={saving || variants.length === 0 || (!selectedClient && !clientEmail)}
-                                className="px-5 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors inline-flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                                {saving ? 'Wysyłanie...' : 'Wyślij do klienta'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Nowa oferta"
+                subtitle="Przygotuj ofertę dla klienta"
+                backHref="/admin/offers"
+                actions={
+                    <>
+                        <button
+                            onClick={() => handleSave(false)}
+                            disabled={saving || variants.length === 0}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                        >
+                            {saving ? 'Zapisywanie...' : 'Zapisz szkic'}
+                        </button>
+                        <button
+                            onClick={() => handleSave(true)}
+                            disabled={saving || variants.length === 0 || (!selectedClient && !clientEmail)}
+                            className="px-5 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors inline-flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                            {saving ? 'Wysyłanie...' : 'Wyślij do klienta'}
+                        </button>
+                    </>
+                }
+            />
 
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
                 {error && (
