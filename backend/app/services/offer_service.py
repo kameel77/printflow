@@ -248,8 +248,7 @@ async def mark_offer_sent(db: AsyncSession, offer: Offer) -> Offer:
     offer.status = OfferStatus.SENT
     offer.sent_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(offer)
-    return offer
+    return await get_offer_by_id(db, offer.id)
 
 
 async def record_tracking_event(
