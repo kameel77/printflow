@@ -5,5 +5,5 @@ export default function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return <AuthWrapper>{children}</AuthWrapper>
 }
