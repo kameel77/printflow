@@ -299,6 +299,9 @@ class ClientBase(BaseModel):
     company_name: Optional[str] = None
     company_nip: Optional[str] = None
     company_address: Optional[str] = None
+    company_street: Optional[str] = None
+    company_postal_code: Optional[str] = None
+    company_city: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -313,6 +316,9 @@ class ClientUpdate(BaseModel):
     company_name: Optional[str] = None
     company_nip: Optional[str] = None
     company_address: Optional[str] = None
+    company_street: Optional[str] = None
+    company_postal_code: Optional[str] = None
+    company_city: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -326,6 +332,14 @@ class ClientResponse(ClientBase):
 
 
 # ────────── Offer Schemas ──────────
+
+class OfferUserResponse(BaseModel):
+    id: int
+    full_name: Optional[str] = None
+    email: str
+    
+    class Config:
+        from_attributes = True
 
 class OfferStatus(str, Enum):
     DRAFT = "DRAFT"
@@ -417,6 +431,7 @@ class OfferResponse(BaseModel):
     client_id: Optional[int] = None
     client: Optional[ClientResponse] = None
     user_id: Optional[int] = None
+    user: Optional[OfferUserResponse] = None
     status: OfferStatus
     title: Optional[str] = None
     internal_note: Optional[str] = None
@@ -440,6 +455,7 @@ class OfferListResponse(BaseModel):
     id: int
     token: str
     client: Optional[ClientResponse] = None
+    user: Optional[OfferUserResponse] = None
     status: OfferStatus
     title: Optional[str] = None
     view_count: int = 0

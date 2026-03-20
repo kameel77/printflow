@@ -32,8 +32,8 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext)
 
-// Paths that don't require authentication
-const PUBLIC_PATHS = ['/auth/login', '/auth/callback', '/offer']
+// Paths that don't require authentication, including internal Next.js error paths
+const PUBLIC_PATHS = ['/', '/auth/login', '/auth/callback', '/offer', '/_not-found', '/404', '/500']
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
@@ -83,7 +83,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     // Redirect unauthenticated users (after loading finishes)
     useEffect(() => {
         if (isLoading) return
-        const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
+        const isPublicPath = PUBLIC_PATHS.some((p) => p === '/' ? pathname === '/' : pathname?.startsWith(p))
 
         if (!user && !isPublicPath) {
             router.push('/auth/login')
@@ -91,7 +91,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }, [user, isLoading, pathname, router])
 
     // Show nothing while checking auth on protected pages
-    const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
+    const isPublicPath = PUBLIC_PATHS.some((p) => p === '/' ? pathname === '/' : pathname?.startsWith(p))
     if (isLoading && !isPublicPath) {
         return (
             <div style={{

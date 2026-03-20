@@ -1,0 +1,387 @@
+
+> printflow-frontend@0.1.0 build
+> next build
+
+ ⚠ You are using a non-standard "NODE_ENV" value in your environment. This creates inconsistencies in the project and is strongly advised against. Read more: https://nextjs.org/docs/messages/non-standard-node-env
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/10) ...
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/auth/callback". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+   Generating static pages (2/10) 
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/auth/login". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/admin". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+   Generating static pages (4/10) 
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/_not-found". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/admin/offers/new". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/admin/offers". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908) {
+  digest: '1281983987'
+}
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+
+Error occurred prerendering page "/admin/clients". Read more: https://nextjs.org/docs/messages/prerender-error
+
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:109363)
+    at d (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:22513)
+    at h (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/318.js:1:14448)
+    at au (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:10446)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:15122
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+    at a_ (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:49776)
+    at ab (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:11808)
+    at /Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16871
+    at aw (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:16908)
+   Generating static pages (7/10) 
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at Q (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at I (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/161.js:6:1263)
+    at renderWithHooks (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5658:16)
+    at renderIndeterminateComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5732:15)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5957:7)
+    at renderNodeDestructiveImpl (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6115:11)
+    at renderNodeDestructive (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6087:14)
+    at finishClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5688:3)
+    at renderClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5696:3)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5954:7)
+
+Error occurred prerendering page "/500". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at Q (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at I (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/161.js:6:1263)
+    at renderWithHooks (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5658:16)
+    at renderIndeterminateComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5732:15)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5957:7)
+    at renderNodeDestructiveImpl (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6115:11)
+    at renderNodeDestructive (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6087:14)
+    at finishClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5688:3)
+    at renderClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5696:3)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5954:7)
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at Q (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at I (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/161.js:6:1263)
+    at renderWithHooks (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5658:16)
+    at renderIndeterminateComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5732:15)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5957:7)
+    at renderNodeDestructiveImpl (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6115:11)
+    at renderNodeDestructive (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6087:14)
+    at finishClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5688:3)
+    at renderClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5696:3)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5954:7)
+
+Error occurred prerendering page "/404". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: <Html> should not be imported outside of pages/_document.
+Read more: https://nextjs.org/docs/messages/no-document-import-in-page
+    at Q (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/next/dist/compiled/next-server/pages.runtime.prod.js:16:5430)
+    at I (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/.next/server/chunks/161.js:6:1263)
+    at renderWithHooks (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5658:16)
+    at renderIndeterminateComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5732:15)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5957:7)
+    at renderNodeDestructiveImpl (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6115:11)
+    at renderNodeDestructive (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:6087:14)
+    at finishClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5688:3)
+    at renderClassComponent (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5696:3)
+    at renderElement (/Users/kamiltonkowicz/Documents/Coding/github/printflow/frontend/node_modules/react-dom/cjs/react-dom-server.browser.development.js:5954:7)
+ ✓ Generating static pages (10/10)
+
+> Export encountered errors on following paths:
+	/_error: /404
+	/_error: /500
+	/_not-found/page: /_not-found
+	/admin/clients/page: /admin/clients
+	/admin/offers/new/page: /admin/offers/new
+	/admin/offers/page: /admin/offers
+	/admin/page: /admin
+	/auth/callback/page: /auth/callback
+	/auth/login/page: /auth/login
+	/page: /

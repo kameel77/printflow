@@ -15,8 +15,8 @@ function CallbackContent() {
     const [isPending, setIsPending] = useState(false)
 
     useEffect(() => {
-        const code = searchParams.get('code')
-        const errorParam = searchParams.get('error')
+        const code = searchParams?.get('code')
+        const errorParam = searchParams?.get('error')
 
         if (errorParam) {
             setError(`Google zwrócił błąd: ${errorParam}`)

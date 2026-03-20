@@ -150,7 +150,10 @@ class Client(Base):
     phone = Column(String(50))
     company_name = Column(String(255))
     company_nip = Column(String(20))
-    company_address = Column(Text)
+    company_address = Column(Text)  # Legacy or full address
+    company_street = Column(String(255))
+    company_postal_code = Column(String(20))
+    company_city = Column(String(255))
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
