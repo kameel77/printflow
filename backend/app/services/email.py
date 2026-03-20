@@ -23,7 +23,7 @@ async def send_offer_email(offer: Offer, custom_message: str | None = None) -> b
         )
 
     offer_url = f"{settings.OFFER_PUBLIC_BASE_URL.rstrip('/')}/offer/{offer.token}"
-    logo_url = f"{settings.OFFER_PUBLIC_BASE_URL.rstrip('/')}/wally_logo.svg"
+    logo_url = f"{settings.OFFER_PUBLIC_BASE_URL.rstrip('/')}/wally_logo.png"
     sender_name = offer.user.full_name if (offer.user and offer.user.full_name) else settings.COMPANY_NAME
     
     subject = f"Odpowiedź na zapytanie ofertowe - {settings.COMPANY_NAME}"
