@@ -55,8 +55,8 @@ async def send_offer_email(offer: Offer, custom_message: str | None = None) -> b
         <style>
             body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; background-color: #f1f5f9; }}
             .container {{ max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }}
-            .header {{ background-color: #ffffff; padding: 32px 40px; text-align: center; border-bottom: 1px solid #e2e8f0; }}
-            .header img {{ max-height: 60px; max-width: 200px; }}
+            .header {{ background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 1px solid #e2e8f0; }}
+            .header img {{ max-height: 120px; max-width: 100%; height: auto; }}
             .content {{ padding: 40px; }}
             .greeting {{ font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1e293b; }}
             .btn-wrapper {{ text-align: center; margin: 32px 0; }}

@@ -156,7 +156,9 @@ export default function PublicOfferPage() {
                     <div className="flex items-start justify-between">
                         <div>
                             {offer.company_name && (
-                                <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-1">{offer.company_name}</p>
+                                <div className="mb-3">
+                                    <img src="/wally_logo.png" alt={offer.company_name} className="h-10 w-auto object-contain" />
+                                </div>
                             )}
                             <h1 className="text-2xl font-bold text-gray-900">{offer.title || 'Oferta'}</h1>
                             {offer.client_name && (
