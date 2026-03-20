@@ -43,19 +43,27 @@ class UserResponse(BaseModel):
 
 async def _exchange_code_for_id_token(code: str) -> dict:
     """Exchange the authorization code for tokens and return the decoded id_token."""
+    # Strip config values just in case they have trailing spaces from ENV
+    client_id = settings.GOOGLE_CLIENT_ID.strip() if settings.GOOGLE_CLIENT_ID else ""
+    client_secret = settings.GOOGLE_CLIENT_SECRET.strip() if settings.GOOGLE_CLIENT_SECRET else ""
+    redirect_uri = settings.GOOGLE_REDIRECT_URI.strip() if settings.GOOGLE_REDIRECT_URI else ""
+
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://oauth2.googleapis.com/token",
             data={
                 "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
                 "grant_type": "authorization_code",
             },
         )
 
     if token_response.status_code != 200:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Google Token error. URI used: {redirect_uri}, Response: {token_response.text}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to exchange code with Google: {token_response.text}",
