@@ -25,6 +25,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       EMAIL_FROM: ${EMAIL_FROM:-}
+      OFFER_PUBLIC_BASE_URL: ${OFFER_PUBLIC_BASE_URL:-${NEXT_PUBLIC_APP_URL:-http://localhost:3000}}
 
     expose:
       - "8000"
