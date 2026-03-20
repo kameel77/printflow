@@ -239,8 +239,17 @@ export default function PublicOfferPage() {
                                         )}
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_gross)}</p>
-                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                        {offer.company_name ? (
+                                            <>
+                                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
+                                                <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
+                                                <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 

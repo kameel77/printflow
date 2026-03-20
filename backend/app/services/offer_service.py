@@ -35,18 +35,26 @@ async def create_offer(
     # Handle inline client creation
     client_id = data.client_id
     if data.client and not client_id:
-        client = Client(
-            name=data.client.name,
-            email=data.client.email,
-            phone=data.client.phone,
-            company_name=data.client.company_name,
-            company_nip=data.client.company_nip,
-            company_address=data.client.company_address,
-            notes=data.client.notes,
-        )
-        db.add(client)
-        await db.flush()
-        client_id = client.id
+        # Check if client with this email already exists
+        existing_client_stmt = select(Client).where(Client.email == data.client.email)
+        existing_client_result = await db.execute(existing_client_stmt)
+        existing_client = existing_client_result.scalar_one_or_none()
+        
+        if existing_client:
+            client_id = existing_client.id
+        else:
+            client = Client(
+                name=data.client.name,
+                email=data.client.email,
+                phone=data.client.phone,
+                company_name=data.client.company_name,
+                company_nip=data.client.company_nip,
+                company_address=data.client.company_address,
+                notes=data.client.notes,
+            )
+            db.add(client)
+            await db.flush()
+            client_id = client.id
 
     # Default validity: 14 days
     valid_until = data.valid_until

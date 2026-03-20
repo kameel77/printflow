@@ -478,13 +478,29 @@ export default function NewOfferPage() {
                                     </div>
 
                                     {/* Totals */}
-                                    <div className="mt-3 flex items-center justify-between pt-3 border-t">
-                                        <span className="text-sm text-gray-500">Suma wariantu:</span>
-                                        <div className="text-right">
-                                            <p className="text-lg font-bold text-gray-900">{formatCurrency(v.totalPriceNet)} <span className="text-sm font-normal text-gray-500">netto</span></p>
-                                            <p className="text-sm text-gray-500">{formatCurrency(v.totalPriceGross)} brutto</p>
-                                        </div>
-                                    </div>
+                                    {(() => {
+                                        const isB2B = newClientMode 
+                                            ? Boolean(companyName || companyNip) 
+                                            : Boolean(selectedClient?.company_name || selectedClient?.company_nip);
+                                        return (
+                                            <div className="mt-3 flex items-center justify-between pt-3 border-t">
+                                                <span className="text-sm text-gray-500">Suma wariantu:</span>
+                                                <div className="text-right">
+                                                    {isB2B ? (
+                                                        <>
+                                                            <p className="text-lg font-bold text-gray-900">{formatCurrency(v.totalPriceNet)} <span className="text-sm font-normal text-gray-500">netto</span></p>
+                                                            <p className="text-sm text-gray-500">{formatCurrency(v.totalPriceGross)} brutto</p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <p className="text-lg font-bold text-gray-900">{formatCurrency(v.totalPriceGross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
+                                                            <p className="text-sm text-gray-500">{formatCurrency(v.totalPriceNet)} netto</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             ))}
                         </div>

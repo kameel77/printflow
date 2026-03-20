@@ -435,8 +435,17 @@ export default function OfferDetailPage() {
                                                 {isAccepted && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ Wybrany przez klienta</span>}
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
-                                                <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
+                                                {offer.client?.company_name || offer.client?.company_nip ? (
+                                                    <>
+                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
+                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
+                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
 
