@@ -35,10 +35,12 @@ async def create_offer(
     # Handle inline client creation
     client_id = data.client_id
     if data.client and not client_id:
-        # Check if client with this email already exists
-        existing_client_stmt = select(Client).where(Client.email == data.client.email)
-        existing_client_result = await db.execute(existing_client_stmt)
-        existing_client = existing_client_result.scalar_one_or_none()
+        existing_client = None
+        if data.client.email:
+            email_lower = data.client.email.strip().lower()
+            existing_client_stmt = select(Client).where(sa_func.lower(Client.email) == email_lower).limit(1)
+            existing_client_result = await db.execute(existing_client_stmt)
+            existing_client = existing_client_result.scalar_one_or_none()
         
         if existing_client:
             client_id = existing_client.id
