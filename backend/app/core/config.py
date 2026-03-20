@@ -27,7 +27,15 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/callback"
-    
+
+    # SMTP Email settings
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_SECURE: bool = False
+    EMAIL_FROM: str = ""
+
     # CORS — comma-separated string, e.g. "https://app.example.com,http://localhost:3000"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 

@@ -35,18 +35,28 @@ async def create_offer(
     # Handle inline client creation
     client_id = data.client_id
     if data.client and not client_id:
-        client = Client(
-            name=data.client.name,
-            email=data.client.email,
-            phone=data.client.phone,
-            company_name=data.client.company_name,
-            company_nip=data.client.company_nip,
-            company_address=data.client.company_address,
-            notes=data.client.notes,
-        )
-        db.add(client)
-        await db.flush()
-        client_id = client.id
+        existing_client = None
+        if data.client.email:
+            email_lower = data.client.email.strip().lower()
+            existing_client_stmt = select(Client).where(sa_func.lower(Client.email) == email_lower).limit(1)
+            existing_client_result = await db.execute(existing_client_stmt)
+            existing_client = existing_client_result.scalar_one_or_none()
+        
+        if existing_client:
+            client_id = existing_client.id
+        else:
+            client = Client(
+                name=data.client.name,
+                email=data.client.email,
+                phone=data.client.phone,
+                company_name=data.client.company_name,
+                company_nip=data.client.company_nip,
+                company_address=data.client.company_address,
+                notes=data.client.notes,
+            )
+            db.add(client)
+            await db.flush()
+            client_id = client.id
 
     # Default validity: 14 days
     valid_until = data.valid_until
@@ -240,8 +250,7 @@ async def mark_offer_sent(db: AsyncSession, offer: Offer) -> Offer:
     offer.status = OfferStatus.SENT
     offer.sent_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(offer)
-    return offer
+    return await get_offer_by_id(db, offer.id)
 
 
 async def record_tracking_event(
