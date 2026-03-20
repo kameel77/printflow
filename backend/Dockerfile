@@ -9,9 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for WeasyPrint and general usage
-RUN sed -i 's/deb.debian.org/ftp.de.debian.org/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/ftp.de.debian.org/g' /etc/apt/sources.list && \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \

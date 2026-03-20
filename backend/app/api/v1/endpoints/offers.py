@@ -9,8 +9,9 @@ from app.core.security import get_current_user
 from app.models.models import User, OfferStatus
 from app.schemas.schemas import (
     OfferCreate, OfferUpdate, OfferResponse, OfferListResponse,
-    OfferStatus as OfferStatusSchema,
+    OfferStatus as OfferStatusSchema, OfferSendRequest
 )
+from app.services.email import send_offer_email
 from app.services.offer_service import (
     create_offer, get_offer_by_id, list_offers, update_offer,
     mark_offer_sent, duplicate_offer,
@@ -70,7 +71,7 @@ async def api_create_offer(
 
     if data.send_immediately:
         offer = await mark_offer_sent(db, offer)
-        # TODO: Send email via Gmail API
+        await send_offer_email(offer, data.message)
 
     return offer
 
@@ -112,6 +113,7 @@ async def api_update_offer(
 @router.post("/{offer_id}/send", response_model=OfferResponse)
 async def api_send_offer(
     offer_id: int,
+    data: OfferSendRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -139,7 +141,7 @@ async def api_send_offer(
         )
 
     offer = await mark_offer_sent(db, offer)
-    # TODO: Send email via Gmail API
+    await send_offer_email(offer, data.message)
 
     return offer
 
@@ -147,6 +149,7 @@ async def api_send_offer(
 @router.post("/{offer_id}/resend", response_model=OfferResponse)
 async def api_resend_offer(
     offer_id: int,
+    data: OfferSendRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -161,7 +164,7 @@ async def api_resend_offer(
             detail="Tylko wysłane oferty mogą być wysłane ponownie"
         )
 
-    # TODO: Send email via Gmail API
+    await send_offer_email(offer, data.message)
 
     return offer
 

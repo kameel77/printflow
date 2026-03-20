@@ -156,7 +156,9 @@ export default function PublicOfferPage() {
                     <div className="flex items-start justify-between">
                         <div>
                             {offer.company_name && (
-                                <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-1">{offer.company_name}</p>
+                                <div className="mb-3">
+                                    <img src="/wally_logo.png" alt={offer.company_name} className="h-10 w-auto object-contain" />
+                                </div>
                             )}
                             <h1 className="text-2xl font-bold text-gray-900">{offer.title || 'Oferta'}</h1>
                             {offer.client_name && (
@@ -237,8 +239,17 @@ export default function PublicOfferPage() {
                                         )}
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_gross)}</p>
-                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                        {offer.company_name ? (
+                                            <>
+                                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
+                                                <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
+                                                <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
