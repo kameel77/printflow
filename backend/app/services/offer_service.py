@@ -106,6 +106,7 @@ async def create_offer(
         select(Offer)
         .options(
             selectinload(Offer.client),
+            selectinload(Offer.user),
             selectinload(Offer.variants).selectinload(OfferVariant.components),
             selectinload(Offer.tracking_events),
         )
@@ -120,6 +121,7 @@ async def get_offer_by_id(db: AsyncSession, offer_id: int) -> Optional[Offer]:
         select(Offer)
         .options(
             selectinload(Offer.client),
+            selectinload(Offer.user),
             selectinload(Offer.variants).selectinload(OfferVariant.components),
             selectinload(Offer.tracking_events),
         )
@@ -134,6 +136,7 @@ async def get_offer_by_token(db: AsyncSession, token: str) -> Optional[Offer]:
         select(Offer)
         .options(
             selectinload(Offer.client),
+            selectinload(Offer.user),
             selectinload(Offer.variants).selectinload(OfferVariant.components),
             selectinload(Offer.tracking_events),
         )
@@ -145,6 +148,7 @@ async def get_offer_by_token(db: AsyncSession, token: str) -> Optional[Offer]:
 async def list_offers(
     db: AsyncSession,
     status: Optional[str] = None,
+    client_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 50,
 ) -> List[Offer]:
@@ -153,6 +157,7 @@ async def list_offers(
         select(Offer)
         .options(
             selectinload(Offer.client),
+            selectinload(Offer.user),
             selectinload(Offer.variants),
         )
         .order_by(Offer.created_at.desc())
@@ -161,6 +166,8 @@ async def list_offers(
     )
     if status:
         query = query.where(Offer.status == OfferStatus(status))
+    if client_id:
+        query = query.where(Offer.client_id == client_id)
 
     result = await db.execute(query)
     return list(result.scalars().all())

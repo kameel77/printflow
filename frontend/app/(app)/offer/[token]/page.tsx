@@ -44,7 +44,7 @@ interface PublicOffer {
 
 export default function PublicOfferPage() {
     const params = useParams()
-    const token = params.token as string
+    const token = params?.token as string
 
     const [offer, setOffer] = useState<PublicOffer | null>(null)
     const [loading, setLoading] = useState(true)
