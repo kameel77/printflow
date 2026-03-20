@@ -6,6 +6,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
+import SendOfferModal from '@/components/SendOfferModal'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 const VAT_RATE = 1.23
@@ -83,6 +84,7 @@ export default function NewOfferPage() {
     // UI
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false)
 
     const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem('access_token')
@@ -193,7 +195,7 @@ export default function NewOfferPage() {
         setVariants(variants.map((v) => ({ ...v, isRecommended: v.id === id })))
     }
 
-    const handleSave = async (sendImmediately: boolean) => {
+    const handleSave = async (sendImmediately: boolean, message?: string) => {
         setSaving(true)
         setError(null)
 
@@ -206,6 +208,7 @@ export default function NewOfferPage() {
                 internal_note: internalNote,
                 valid_until: validUntil.toISOString(),
                 send_immediately: sendImmediately,
+                message: message || null,
                 variants: variants.map((v, i) => ({
                     name: v.name,
                     is_recommended: v.isRecommended,
@@ -262,7 +265,7 @@ export default function NewOfferPage() {
                             {saving ? 'Zapisywanie...' : 'Zapisz szkic'}
                         </button>
                         <button
-                            onClick={() => handleSave(true)}
+                            onClick={() => setIsSendModalOpen(true)}
                             disabled={saving || variants.length === 0 || (!selectedClient && !clientEmail)}
                             className="px-5 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors inline-flex items-center gap-2"
                         >
@@ -518,6 +521,15 @@ export default function NewOfferPage() {
                     </div>
                 </div>
             </div>
+
+            <SendOfferModal
+                isOpen={isSendModalOpen}
+                onClose={() => setIsSendModalOpen(false)}
+                onSend={async (msg) => {
+                    await handleSave(true, msg)
+                }}
+                clientName={selectedClient?.name || clientName || undefined}
+            />
         </div>
     )
 }

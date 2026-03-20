@@ -6,6 +6,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/components/AuthProvider'
 import Header from '@/components/Header'
+import SendOfferModal from '@/components/SendOfferModal'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -89,6 +90,7 @@ export default function OfferDetailPage() {
     const [isEditingClient, setIsEditingClient] = useState(false)
     const [editingClientData, setEditingClientData] = useState<any>(null)
     const [savingClient, setSavingClient] = useState(false)
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false)
 
     const offerId = params?.id as string
 
@@ -116,12 +118,13 @@ export default function OfferDetailPage() {
     const formatDate = (dateStr: string) =>
         new Date(dateStr).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-    const handleSend = async () => {
+    const handleSend = async (message: string) => {
         try {
-            await axios.post(`${API_URL}/offers/${offerId}/send`, {}, { headers: getAuthHeaders() })
+            await axios.post(`${API_URL}/offers/${offerId}/send`, { message }, { headers: getAuthHeaders() })
             fetchOffer()
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd wysyłki')
+            throw err
         }
     }
 
@@ -255,7 +258,7 @@ export default function OfferDetailPage() {
                             </button>
                         )}
                         {offer.status === 'DRAFT' && (
-                            <button onClick={handleSend} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
+                            <button onClick={() => setIsSendModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                 </svg>
@@ -524,6 +527,13 @@ export default function OfferDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <SendOfferModal
+                isOpen={isSendModalOpen}
+                onClose={() => setIsSendModalOpen(false)}
+                onSend={handleSend}
+                clientName={offer.client?.name || offer.client?.company_name || undefined}
+            />
         </div>
     )
 }

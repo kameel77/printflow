@@ -413,6 +413,7 @@ class OfferCreate(BaseModel):
     valid_until: Optional[datetime] = None
     variants: List[OfferVariantCreate] = []
     send_immediately: bool = False
+    message: Optional[str] = None
 
 
 class OfferUpdate(BaseModel):
@@ -423,6 +424,11 @@ class OfferUpdate(BaseModel):
     status: Optional[OfferStatus] = None
     variants: Optional[List[OfferVariantCreate]] = None
     send_immediately: bool = False
+
+
+class OfferSendRequest(BaseModel):
+    message: Optional[str] = None
+
 
 
 class OfferResponse(BaseModel):
