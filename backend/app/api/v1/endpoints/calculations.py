@@ -8,10 +8,10 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.models import (
     Material,
-    MaterialVariant,
     Process,
     ProductTemplate,
     TemplateComponent,
+    LaborRateSettings,
 )
 from app.schemas.schemas import CalculationRequest, CalculationResponse
 from app.engine.calculator import PrintFlowEngine
@@ -63,6 +63,7 @@ async def build_db_context(db: AsyncSession) -> dict:
             .selectinload(TemplateComponent.material),
             selectinload(ProductTemplate.components)
             .selectinload(TemplateComponent.process),
+            selectinload(ProductTemplate.labor_entries),
         )
     )
     templates = {}
@@ -92,14 +93,27 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_margin_h_cm": float(t.default_margin_h_cm) if t.default_margin_h_cm else 0.0,
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
             "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
+            "labor_entries": [
+                {"hours": float(e.hours), "difficulty": e.difficulty.value}
+                for e in t.labor_entries
+            ],
             "components": components,
         }
+
+    settings_result = await db.execute(select(LaborRateSettings).where(LaborRateSettings.id == 1))
+    settings = settings_result.scalar_one_or_none()
+    labor_rate_settings = {
+        "easy_rate": float(settings.easy_rate),
+        "medium_rate": float(settings.medium_rate),
+        "hard_rate": float(settings.hard_rate),
+    } if settings else {}
 
     return {
         "processes": processes,
         "materials": materials,
         "material_variants": material_variants,
         "templates": templates,
+        "labor_rate_settings": labor_rate_settings,
     }
 
 

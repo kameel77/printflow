@@ -21,6 +21,12 @@ class QuoteStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
 
+class LaborDifficulty(str, Enum):
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    HARD = "HARD"
+
+
 # Material Schemas
 class MaterialBase(BaseModel):
     name: str
@@ -129,6 +135,22 @@ class ProcessResponse(ProcessBase):
 
 
 # Template Schemas
+class TemplateLaborEntryCreate(BaseModel):
+    hours: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+
+class TemplateLaborEntryResponse(BaseModel):
+    id: int
+    hours: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 class TemplateComponentBase(BaseModel):
     material_id: Optional[int] = None
     process_id: Optional[int] = None
@@ -166,6 +188,7 @@ class ProductTemplateBase(BaseModel):
 
 class ProductTemplateCreate(ProductTemplateBase):
     components: List[TemplateComponentCreate] = []
+    labor_entries: List[TemplateLaborEntryCreate] = []
 
 
 class ProductTemplateUpdate(BaseModel):
@@ -177,6 +200,7 @@ class ProductTemplateUpdate(BaseModel):
     max_bryt_width_cm: Optional[Decimal] = None
     is_active: Optional[bool] = None
     components: Optional[List[TemplateComponentCreate]] = None
+    labor_entries: Optional[List[TemplateLaborEntryCreate]] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
     tooltip_overlap_cm: Optional[str] = None
@@ -185,7 +209,8 @@ class ProductTemplateUpdate(BaseModel):
 class ProductTemplateResponse(ProductTemplateBase):
     id: int
     components: List[TemplateComponentResponse] = []
-    
+    labor_entries: List[TemplateLaborEntryResponse] = []
+
     class Config:
         from_attributes = True
 
@@ -231,10 +256,29 @@ class CalculationResponse(BaseModel):
     is_split: bool
     num_panels: int
     overlap_used_cm: float
+    labor_cost_total: float = 0.0
     client_view: List[Dict[str, Any]]
     tech_view: List[ComponentResult]
     panel_methods: List[PanelMethodResult] = []
     debug: List[str] = []
+
+
+# Labor Rate Settings Schemas
+class LaborRateSettingsUpdate(BaseModel):
+    easy_rate: Optional[Decimal] = None
+    medium_rate: Optional[Decimal] = None
+    hard_rate: Optional[Decimal] = None
+
+
+class LaborRateSettingsResponse(BaseModel):
+    id: int
+    easy_rate: Decimal = Decimal("0.00")
+    medium_rate: Decimal = Decimal("0.00")
+    hard_rate: Decimal = Decimal("0.00")
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 
 # Quote Schemas
