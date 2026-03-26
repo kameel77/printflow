@@ -22,14 +22,16 @@ def upgrade() -> None:
         batch_op.drop_column('labor_hours')
         batch_op.drop_column('labor_difficulty')
 
-    op.create_table(
-        'template_labor_entries',
-        sa.Column('id', sa.Integer(), primary_key=True, index=True),
-        sa.Column('template_id', sa.Integer(), sa.ForeignKey('product_templates.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('hours', sa.Numeric(precision=10, scale=2), nullable=False),
-        sa.Column('difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='labordifficulty'), nullable=False),
-        sa.Column('sort_order', sa.Integer(), nullable=False, server_default='0'),
-    )
+    op.execute("""
+        CREATE TABLE template_labor_entries (
+            id SERIAL PRIMARY KEY,
+            template_id INTEGER NOT NULL REFERENCES product_templates(id) ON DELETE CASCADE,
+            hours NUMERIC(10, 2) NOT NULL,
+            difficulty labordifficulty NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+    op.execute("CREATE INDEX ix_template_labor_entries_id ON template_labor_entries (id)")
 
 
 def downgrade() -> None:
@@ -37,4 +39,4 @@ def downgrade() -> None:
 
     with op.batch_alter_table('product_templates', schema=None) as batch_op:
         batch_op.add_column(sa.Column('labor_hours', sa.Numeric(precision=10, scale=2), nullable=True))
-        batch_op.add_column(sa.Column('labor_difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='labordifficulty'), nullable=True))
+        batch_op.add_column(sa.Column('labor_difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='labordifficulty', create_type=False), nullable=True))
