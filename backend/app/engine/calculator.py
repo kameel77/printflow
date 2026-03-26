@@ -472,6 +472,38 @@ class PrintFlowEngine:
                     is_rotated=rotated_flag
                 ))
         
+        # Labor cost
+        labor_cost = Decimal("0")
+        labor_entries = template.get('labor_entries', []) if template else []
+        if labor_entries:
+            rates = self.db.get('labor_rate_settings', {})
+            rate_map = {
+                'EASY': self._q(rates.get('easy_rate', 0)),
+                'MEDIUM': self._q(rates.get('medium_rate', 0)),
+                'HARD': self._q(rates.get('hard_rate', 0)),
+            }
+            difficulty_labels = {'EASY': 'Łatwa', 'MEDIUM': 'Średnia', 'HARD': 'Trudna'}
+            for entry in labor_entries:
+                hours_val = self._q(entry.get('hours', 0))
+                difficulty = entry.get('difficulty', '')
+                if hours_val <= 0:
+                    continue
+                rate = rate_map.get(difficulty, Decimal("0"))
+                entry_cost = hours_val * rate
+                labor_cost += entry_cost
+                total_cost += entry_cost
+                label = difficulty_labels.get(difficulty, difficulty)
+                self.log(f"Robocizna ({label}): {hours_val}h × {rate} PLN/h = {entry_cost:.2f} PLN")
+                tech_view.append(ComponentResult(
+                    name=f"Robocizna — {label}",
+                    type="LABOR",
+                    qty=float(hours_val),
+                    unit="godz.",
+                    price_net=self._money(entry_cost),
+                    details=f"Stawka: {self._money(rate)} PLN/h",
+                    is_rotated=False
+                ))
+
         # Calculate margin
         margin_pct = ((total_price - total_cost) / total_price * 100) if total_price > 0 else Decimal("0")
         
@@ -526,6 +558,7 @@ class PrintFlowEngine:
             total_price_net=self._money(total_price),
             total_cost_cogs=self._money(total_cost),
             margin_percentage=float(margin_pct.quantize(Decimal("0.1"))),
+            labor_cost_total=self._money(labor_cost),
             gross_dimensions={"width": float(w_g), "height": float(h_g)},
             is_split=is_split,
             num_panels=num_panels,
