@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), primary_key=True, index=True),
         sa.Column('template_id', sa.Integer(), sa.ForeignKey('product_templates.id', ondelete='CASCADE'), nullable=False),
         sa.Column('hours', sa.Numeric(precision=10, scale=2), nullable=False),
-        sa.Column('difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='labordifficulty'), nullable=False),
+        sa.Column('difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='labordifficulty', create_type=False), nullable=False),
         sa.Column('sort_order', sa.Integer(), nullable=False, server_default='0'),
     )
 
