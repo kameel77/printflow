@@ -73,6 +73,13 @@ interface TemplateComponent {
     sort_order: number
 }
 
+interface TemplateLaborEntry {
+    id?: number
+    hours: number
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+    sort_order?: number
+}
+
 interface Template {
     id: number
     name: string
@@ -82,8 +89,7 @@ interface Template {
     default_overlap_cm: number
     max_bryt_width_cm: number | null
     is_active: boolean
-    labor_hours: number | null
-    labor_difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null
+    labor_entries: TemplateLaborEntry[]
     components: TemplateComponent[]
     tooltip_margin_w_cm?: string | null
     tooltip_margin_h_cm?: string | null
@@ -120,6 +126,9 @@ export default function AdminPage() {
     const [error, setError] = useState<string | null>(null)
     const [users, setUsers] = useState<UserItem[]>([])
     const [laborRates, setLaborRates] = useState<LaborRateSettings | null>(null)
+    const [searchTemplates, setSearchTemplates] = useState('')
+    const [searchMaterials, setSearchMaterials] = useState('')
+    const [searchProcesses, setSearchProcesses] = useState('')
 
     // Modal state — Templates
     const [showModal, setShowModal] = useState(false)
@@ -357,15 +366,24 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Szablony produktów</h2>
-                                    <button
-                                        onClick={openCreateTemplate}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj produkt
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="text"
+                                            value={searchTemplates}
+                                            onChange={(e) => setSearchTemplates(e.target.value)}
+                                            placeholder="Szukaj produktów..."
+                                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-52"
+                                        />
+                                        <button
+                                            onClick={openCreateTemplate}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Dodaj produkt
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {templates.length === 0 ? (
@@ -374,7 +392,9 @@ export default function AdminPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {templates.map((t) => (
+                                        {templates.filter(t =>
+                                            !searchTemplates || t.name.toLowerCase().includes(searchTemplates.toLowerCase()) || t.description?.toLowerCase().includes(searchTemplates.toLowerCase())
+                                        ).map((t) => (
                                             <div key={t.id} className="bg-white rounded-xl shadow-sm border p-6">
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
@@ -460,7 +480,14 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Materiały</h2>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="text"
+                                            value={searchMaterials}
+                                            onChange={(e) => setSearchMaterials(e.target.value)}
+                                            placeholder="Szukaj materiałów..."
+                                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-52"
+                                        />
                                         <button
                                             onClick={() => setShowMaterialCSVModal(true)}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
@@ -488,7 +515,9 @@ export default function AdminPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {materials.map((m) => (
+                                        {materials.filter(m =>
+                                            !searchMaterials || m.name.toLowerCase().includes(searchMaterials.toLowerCase()) || m.category?.toLowerCase().includes(searchMaterials.toLowerCase())
+                                        ).map((m) => (
                                             <div key={m.id} className="bg-white rounded-xl shadow-sm border p-6">
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
@@ -587,15 +616,24 @@ export default function AdminPage() {
                             <div>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Procesy</h2>
-                                    <button
-                                        onClick={openCreateProcess}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Dodaj proces
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="text"
+                                            value={searchProcesses}
+                                            onChange={(e) => setSearchProcesses(e.target.value)}
+                                            placeholder="Szukaj procesów..."
+                                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-52"
+                                        />
+                                        <button
+                                            onClick={openCreateProcess}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Dodaj proces
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {processes.length === 0 ? (
@@ -673,7 +711,9 @@ export default function AdminPage() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100">
-                                                {processes.map((p) => (
+                                                {processes.filter(p =>
+                                                    !searchProcesses || p.name.toLowerCase().includes(searchProcesses.toLowerCase())
+                                                ).map((p) => (
                                                     <tr key={p.id} className="hover:bg-gray-50">
                                                         <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
                                                         <td className="px-6 py-4">
@@ -929,8 +969,9 @@ function TemplateModal({
     const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
     const [maxBrytWidth, setMaxBrytWidth] = useState(template?.max_bryt_width_cm != null ? String(Number(template.max_bryt_width_cm)) : '')
     const [isActive, setIsActive] = useState(template?.is_active ?? true)
-    const [laborHours, setLaborHours] = useState(template?.labor_hours != null ? String(Number(template.labor_hours)) : '')
-    const [laborDifficulty, setLaborDifficulty] = useState<string>(template?.labor_difficulty || 'MEDIUM')
+    const [laborEntries, setLaborEntries] = useState<{ hours: string; difficulty: string }[]>(
+        template?.labor_entries?.map(e => ({ hours: String(Number(e.hours)), difficulty: e.difficulty })) || []
+    )
     const [components, setComponents] = useState<
         { type: 'material' | 'process'; refId: string; isRequired: boolean; sortOrder: number }[]
     >(
@@ -977,8 +1018,9 @@ function TemplateModal({
             default_overlap_cm: parseFloat(overlap),
             max_bryt_width_cm: maxBrytWidth ? parseFloat(maxBrytWidth) : null,
             is_active: isActive,
-            labor_hours: laborHours ? parseFloat(laborHours) : null,
-            labor_difficulty: laborHours ? laborDifficulty : null,
+            labor_entries: laborEntries
+                .filter(e => e.hours && parseFloat(e.hours) > 0)
+                .map((e, i) => ({ hours: parseFloat(e.hours), difficulty: e.difficulty, sort_order: i })),
             components: components.map((c) => ({
                 material_id: c.type === 'material' ? parseInt(c.refId) : null,
                 process_id: c.type === 'process' ? parseInt(c.refId) : null,
@@ -1091,32 +1133,58 @@ function TemplateModal({
                     </div>
 
                     {/* Labor cost */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Robocizna (godz.)</label>
-                            <input
-                                type="number"
-                                value={laborHours}
-                                onChange={(e) => setLaborHours(e.target.value)}
-                                step="0.5"
-                                min="0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="np. 2.5"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Poziom trudności</label>
-                            <select
-                                value={laborDifficulty}
-                                onChange={(e) => setLaborDifficulty(e.target.value)}
-                                disabled={!laborHours}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Robocizna</h3>
+                            <button
+                                type="button"
+                                onClick={() => setLaborEntries(prev => [...prev, { hours: '', difficulty: 'MEDIUM' }])}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                             >
-                                <option value="EASY">Łatwa</option>
-                                <option value="MEDIUM">Średnia</option>
-                                <option value="HARD">Trudna</option>
-                            </select>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Dodaj wpis
+                            </button>
                         </div>
+                        {laborEntries.length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">Brak wpisów robocizny.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {laborEntries.map((entry, idx) => (
+                                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-xs text-gray-400 font-mono w-5 text-center">{idx + 1}</span>
+                                        <input
+                                            type="number"
+                                            value={entry.hours}
+                                            onChange={(e) => setLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, hours: e.target.value } : x))}
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="godz."
+                                            className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                        <select
+                                            value={entry.difficulty}
+                                            onChange={(e) => setLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, difficulty: e.target.value } : x))}
+                                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                            <option value="EASY">Łatwa</option>
+                                            <option value="MEDIUM">Średnia</option>
+                                            <option value="HARD">Trudna</option>
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLaborEntries(prev => prev.filter((_, i) => i !== idx))}
+                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Components */}

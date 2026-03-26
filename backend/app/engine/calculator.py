@@ -474,29 +474,35 @@ class PrintFlowEngine:
         
         # Labor cost
         labor_cost = Decimal("0")
-        labor_hours_val = self._q(template.get('labor_hours', 0)) if template and template.get('labor_hours') else Decimal("0")
-        labor_difficulty = template.get('labor_difficulty') if template else None
-
-        if labor_hours_val > 0 and labor_difficulty:
+        labor_entries = template.get('labor_entries', []) if template else []
+        if labor_entries:
             rates = self.db.get('labor_rate_settings', {})
             rate_map = {
                 'EASY': self._q(rates.get('easy_rate', 0)),
                 'MEDIUM': self._q(rates.get('medium_rate', 0)),
                 'HARD': self._q(rates.get('hard_rate', 0)),
             }
-            rate = rate_map.get(labor_difficulty, Decimal("0"))
-            labor_cost = labor_hours_val * rate
-            total_cost += labor_cost
-            self.log(f"Robocizna: {labor_hours_val}h × {rate} PLN/h = {labor_cost:.2f} PLN")
-            tech_view.append(ComponentResult(
-                name=f"Robocizna ({labor_difficulty.capitalize()})",
-                type="LABOR",
-                qty=float(labor_hours_val),
-                unit="godz.",
-                price_net=self._money(labor_cost),
-                details=f"Stawka: {self._money(rate)} PLN/h",
-                is_rotated=False
-            ))
+            difficulty_labels = {'EASY': 'Łatwa', 'MEDIUM': 'Średnia', 'HARD': 'Trudna'}
+            for entry in labor_entries:
+                hours_val = self._q(entry.get('hours', 0))
+                difficulty = entry.get('difficulty', '')
+                if hours_val <= 0:
+                    continue
+                rate = rate_map.get(difficulty, Decimal("0"))
+                entry_cost = hours_val * rate
+                labor_cost += entry_cost
+                total_cost += entry_cost
+                label = difficulty_labels.get(difficulty, difficulty)
+                self.log(f"Robocizna ({label}): {hours_val}h × {rate} PLN/h = {entry_cost:.2f} PLN")
+                tech_view.append(ComponentResult(
+                    name=f"Robocizna — {label}",
+                    type="LABOR",
+                    qty=float(hours_val),
+                    unit="godz.",
+                    price_net=self._money(entry_cost),
+                    details=f"Stawka: {self._money(rate)} PLN/h",
+                    is_rotated=False
+                ))
 
         # Calculate margin
         margin_pct = ((total_price - total_cost) / total_price * 100) if total_price > 0 else Decimal("0")

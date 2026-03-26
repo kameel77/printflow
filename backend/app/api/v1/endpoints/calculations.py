@@ -8,7 +8,6 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models.models import (
     Material,
-    MaterialVariant,
     Process,
     ProductTemplate,
     TemplateComponent,
@@ -64,6 +63,7 @@ async def build_db_context(db: AsyncSession) -> dict:
             .selectinload(TemplateComponent.material),
             selectinload(ProductTemplate.components)
             .selectinload(TemplateComponent.process),
+            selectinload(ProductTemplate.labor_entries),
         )
     )
     templates = {}
@@ -93,8 +93,10 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_margin_h_cm": float(t.default_margin_h_cm) if t.default_margin_h_cm else 0.0,
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
             "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
-            "labor_hours": float(t.labor_hours) if t.labor_hours else None,
-            "labor_difficulty": t.labor_difficulty.value if t.labor_difficulty else None,
+            "labor_entries": [
+                {"hours": float(e.hours), "difficulty": e.difficulty.value}
+                for e in t.labor_entries
+            ],
             "components": components,
         }
 

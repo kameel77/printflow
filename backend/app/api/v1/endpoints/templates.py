@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import ProductTemplate, TemplateComponent
+from app.models.models import ProductTemplate, TemplateComponent, TemplateLaborEntry
 from app.schemas.schemas import (
     ProductTemplateCreate,
     ProductTemplateResponse,
@@ -25,7 +25,10 @@ async def list_templates(
     """List all product templates"""
     result = await db.execute(
         select(ProductTemplate)
-        .options(selectinload(ProductTemplate.components))
+        .options(
+            selectinload(ProductTemplate.components),
+            selectinload(ProductTemplate.labor_entries),
+        )
         .offset(skip)
         .limit(limit)
     )
@@ -46,16 +49,18 @@ async def create_template(
         default_overlap_cm=template.default_overlap_cm,
         max_bryt_width_cm=template.max_bryt_width_cm,
         is_active=template.is_active,
-        labor_hours=template.labor_hours,
-        labor_difficulty=template.labor_difficulty,
     )
     for comp in template.components:
         db_template.components.append(
             TemplateComponent(**comp.model_dump())
         )
+    for i, entry in enumerate(template.labor_entries):
+        db_template.labor_entries.append(
+            TemplateLaborEntry(hours=entry.hours, difficulty=entry.difficulty, sort_order=i)
+        )
     db.add(db_template)
     await db.flush()
-    await db.refresh(db_template, ["components"])
+    await db.refresh(db_template, ["components", "labor_entries"])
     return db_template
 
 
@@ -67,7 +72,10 @@ async def get_template(
     """Get template by ID"""
     result = await db.execute(
         select(ProductTemplate)
-        .options(selectinload(ProductTemplate.components))
+        .options(
+            selectinload(ProductTemplate.components),
+            selectinload(ProductTemplate.labor_entries),
+        )
         .where(ProductTemplate.id == template_id)
     )
     template = result.scalar_one_or_none()
@@ -85,7 +93,10 @@ async def update_template(
     """Update product template"""
     result = await db.execute(
         select(ProductTemplate)
-        .options(selectinload(ProductTemplate.components))
+        .options(
+            selectinload(ProductTemplate.components),
+            selectinload(ProductTemplate.labor_entries),
+        )
         .where(ProductTemplate.id == template_id)
     )
     template = result.scalar_one_or_none()
@@ -94,26 +105,30 @@ async def update_template(
 
     update_data = template_update.model_dump(exclude_unset=True)
 
-    # Handle components separately if provided
     components_data = update_data.pop("components", None)
+    labor_entries_data = update_data.pop("labor_entries", None)
+
     for key, value in update_data.items():
         setattr(template, key, value)
 
-    # Replace components if provided
     if components_data is not None:
-        # Remove old components
         for old_comp in template.components:
             await db.delete(old_comp)
         template.components.clear()
-
-        # Add new components
         for comp_data in components_data:
-            template.components.append(
-                TemplateComponent(**comp_data)
+            template.components.append(TemplateComponent(**comp_data))
+
+    if labor_entries_data is not None:
+        for old_entry in template.labor_entries:
+            await db.delete(old_entry)
+        template.labor_entries.clear()
+        for i, entry_data in enumerate(labor_entries_data):
+            template.labor_entries.append(
+                TemplateLaborEntry(hours=entry_data["hours"], difficulty=entry_data["difficulty"], sort_order=i)
             )
 
     await db.flush()
-    await db.refresh(template, ["components"])
+    await db.refresh(template, ["components", "labor_entries"])
     return template
 
 

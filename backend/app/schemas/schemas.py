@@ -135,6 +135,22 @@ class ProcessResponse(ProcessBase):
 
 
 # Template Schemas
+class TemplateLaborEntryCreate(BaseModel):
+    hours: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+
+class TemplateLaborEntryResponse(BaseModel):
+    id: int
+    hours: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 class TemplateComponentBase(BaseModel):
     material_id: Optional[int] = None
     process_id: Optional[int] = None
@@ -165,8 +181,6 @@ class ProductTemplateBase(BaseModel):
     default_overlap_cm: Decimal = Decimal("1.0")
     max_bryt_width_cm: Optional[Decimal] = None
     is_active: bool = True
-    labor_hours: Optional[Decimal] = None
-    labor_difficulty: Optional[LaborDifficulty] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
     tooltip_overlap_cm: Optional[str] = None
@@ -174,6 +188,7 @@ class ProductTemplateBase(BaseModel):
 
 class ProductTemplateCreate(ProductTemplateBase):
     components: List[TemplateComponentCreate] = []
+    labor_entries: List[TemplateLaborEntryCreate] = []
 
 
 class ProductTemplateUpdate(BaseModel):
@@ -184,9 +199,8 @@ class ProductTemplateUpdate(BaseModel):
     default_overlap_cm: Optional[Decimal] = None
     max_bryt_width_cm: Optional[Decimal] = None
     is_active: Optional[bool] = None
-    labor_hours: Optional[Decimal] = None
-    labor_difficulty: Optional[LaborDifficulty] = None
     components: Optional[List[TemplateComponentCreate]] = None
+    labor_entries: Optional[List[TemplateLaborEntryCreate]] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
     tooltip_overlap_cm: Optional[str] = None
@@ -195,7 +209,8 @@ class ProductTemplateUpdate(BaseModel):
 class ProductTemplateResponse(ProductTemplateBase):
     id: int
     components: List[TemplateComponentResponse] = []
-    
+    labor_entries: List[TemplateLaborEntryResponse] = []
+
     class Config:
         from_attributes = True
 
