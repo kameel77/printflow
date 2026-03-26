@@ -21,6 +21,12 @@ class QuoteStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
 
+class LaborDifficulty(str, Enum):
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    HARD = "HARD"
+
+
 # Material Schemas
 class MaterialBase(BaseModel):
     name: str
@@ -159,6 +165,8 @@ class ProductTemplateBase(BaseModel):
     default_overlap_cm: Decimal = Decimal("1.0")
     max_bryt_width_cm: Optional[Decimal] = None
     is_active: bool = True
+    labor_hours: Optional[Decimal] = None
+    labor_difficulty: Optional[LaborDifficulty] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
     tooltip_overlap_cm: Optional[str] = None
@@ -176,6 +184,8 @@ class ProductTemplateUpdate(BaseModel):
     default_overlap_cm: Optional[Decimal] = None
     max_bryt_width_cm: Optional[Decimal] = None
     is_active: Optional[bool] = None
+    labor_hours: Optional[Decimal] = None
+    labor_difficulty: Optional[LaborDifficulty] = None
     components: Optional[List[TemplateComponentCreate]] = None
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
@@ -231,10 +241,29 @@ class CalculationResponse(BaseModel):
     is_split: bool
     num_panels: int
     overlap_used_cm: float
+    labor_cost_total: float = 0.0
     client_view: List[Dict[str, Any]]
     tech_view: List[ComponentResult]
     panel_methods: List[PanelMethodResult] = []
     debug: List[str] = []
+
+
+# Labor Rate Settings Schemas
+class LaborRateSettingsUpdate(BaseModel):
+    easy_rate: Optional[Decimal] = None
+    medium_rate: Optional[Decimal] = None
+    hard_rate: Optional[Decimal] = None
+
+
+class LaborRateSettingsResponse(BaseModel):
+    id: int
+    easy_rate: Decimal = Decimal("0.00")
+    medium_rate: Decimal = Decimal("0.00")
+    hard_rate: Decimal = Decimal("0.00")
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 
 # Quote Schemas

@@ -82,10 +82,19 @@ interface Template {
     default_overlap_cm: number
     max_bryt_width_cm: number | null
     is_active: boolean
+    labor_hours: number | null
+    labor_difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null
     components: TemplateComponent[]
     tooltip_margin_w_cm?: string | null
     tooltip_margin_h_cm?: string | null
     tooltip_overlap_cm?: string | null
+}
+
+interface LaborRateSettings {
+    id: number
+    easy_rate: number
+    medium_rate: number
+    hard_rate: number
 }
 
 interface UserItem {
@@ -98,7 +107,7 @@ interface UserItem {
 }
 
 // ────────── Tab types ──────────
-type TabId = 'templates' | 'materials' | 'processes' | 'users'
+type TabId = 'templates' | 'materials' | 'processes' | 'users' | 'settings'
 
 // ────────── Main Component ──────────
 export default function AdminPage() {
@@ -110,6 +119,7 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [users, setUsers] = useState<UserItem[]>([])
+    const [laborRates, setLaborRates] = useState<LaborRateSettings | null>(null)
 
     // Modal state — Templates
     const [showModal, setShowModal] = useState(false)
@@ -131,16 +141,18 @@ export default function AdminPage() {
         try {
             const token = localStorage.getItem('access_token')
             const headers = token ? { Authorization: `Bearer ${token}` } : {}
-            const [tRes, mRes, pRes, uRes] = await Promise.all([
+            const [tRes, mRes, pRes, uRes, lRes] = await Promise.all([
                 axios.get(`${API_URL}/templates`),
                 axios.get(`${API_URL}/materials`),
                 axios.get(`${API_URL}/processes`),
                 axios.get(`${API_URL}/users`, { headers }).catch(() => ({ data: [] })),
+                axios.get(`${API_URL}/settings/labor-rates`).catch(() => ({ data: null })),
             ])
             setTemplates(tRes.data)
             setMaterials(mRes.data)
             setProcesses(pRes.data)
             setUsers(uRes.data)
+            setLaborRates(lRes.data)
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Błąd ładowania danych')
         } finally {
@@ -282,14 +294,17 @@ export default function AdminPage() {
         }
     }
 
-    const allTabs: { id: TabId; label: string; count: number }[] = [
+    const allTabs: { id: TabId; label: string; count: number | null }[] = [
         { id: 'templates', label: 'Produkty', count: templates.length },
         { id: 'materials', label: 'Materiały', count: materials.length },
         { id: 'processes', label: 'Procesy', count: processes.length },
         { id: 'users', label: 'Użytkownicy', count: users.length },
+        { id: 'settings', label: 'Ustawienia', count: null },
     ]
 
-    const tabs = allTabs.filter(tab => tab.id !== 'users' || user?.role?.toLowerCase() === 'admin')
+    const tabs = allTabs.filter(tab =>
+        (tab.id !== 'users' && tab.id !== 'settings') || user?.role?.toLowerCase() === 'admin'
+    )
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -319,12 +334,14 @@ export default function AdminPage() {
                                 }`}
                         >
                             {tab.label}
-                            <span
-                                className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-blue-500 text-blue-100' : 'bg-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                {tab.count}
-                            </span>
+                            {tab.count !== null && (
+                                <span
+                                    className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-blue-500 text-blue-100' : 'bg-gray-200 text-gray-600'
+                                        }`}
+                                >
+                                    {tab.count}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -782,6 +799,21 @@ export default function AdminPage() {
                                 )}
                             </div>
                         )}
+
+                        {/* Settings Tab */}
+                        {activeTab === 'settings' && (
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Stawki robocizny</h2>
+                                <LaborRateSettingsForm
+                                    settings={laborRates}
+                                    onSave={async (data) => {
+                                        await axios.put(`${API_URL}/settings/labor-rates`, data)
+                                        const res = await axios.get(`${API_URL}/settings/labor-rates`)
+                                        setLaborRates(res.data)
+                                    }}
+                                />
+                            </div>
+                        )}
                     </>
                 )}
             </div>
@@ -897,6 +929,8 @@ function TemplateModal({
     const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
     const [maxBrytWidth, setMaxBrytWidth] = useState(template?.max_bryt_width_cm != null ? String(Number(template.max_bryt_width_cm)) : '')
     const [isActive, setIsActive] = useState(template?.is_active ?? true)
+    const [laborHours, setLaborHours] = useState(template?.labor_hours != null ? String(Number(template.labor_hours)) : '')
+    const [laborDifficulty, setLaborDifficulty] = useState<string>(template?.labor_difficulty || 'MEDIUM')
     const [components, setComponents] = useState<
         { type: 'material' | 'process'; refId: string; isRequired: boolean; sortOrder: number }[]
     >(
@@ -943,6 +977,8 @@ function TemplateModal({
             default_overlap_cm: parseFloat(overlap),
             max_bryt_width_cm: maxBrytWidth ? parseFloat(maxBrytWidth) : null,
             is_active: isActive,
+            labor_hours: laborHours ? parseFloat(laborHours) : null,
+            labor_difficulty: laborHours ? laborDifficulty : null,
             components: components.map((c) => ({
                 material_id: c.type === 'material' ? parseInt(c.refId) : null,
                 process_id: c.type === 'process' ? parseInt(c.refId) : null,
@@ -1052,6 +1088,35 @@ function TemplateModal({
                         <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                             Aktywny
                         </label>
+                    </div>
+
+                    {/* Labor cost */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Robocizna (godz.)</label>
+                            <input
+                                type="number"
+                                value={laborHours}
+                                onChange={(e) => setLaborHours(e.target.value)}
+                                step="0.5"
+                                min="0"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="np. 2.5"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Poziom trudności</label>
+                            <select
+                                value={laborDifficulty}
+                                onChange={(e) => setLaborDifficulty(e.target.value)}
+                                disabled={!laborHours}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
+                            >
+                                <option value="EASY">Łatwa</option>
+                                <option value="MEDIUM">Średnia</option>
+                                <option value="HARD">Trudna</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Components */}
@@ -1778,6 +1843,72 @@ function MaterialCSVImportModal({
                     </button>
                 </div>
             </div>
+        </div>
+    )
+}
+
+// ────────── Labor Rate Settings Form ──────────
+function LaborRateSettingsForm({
+    settings,
+    onSave,
+}: {
+    settings: LaborRateSettings | null
+    onSave: (data: { easy_rate: number; medium_rate: number; hard_rate: number }) => Promise<void>
+}) {
+    const [easyRate, setEasyRate] = useState(String(settings?.easy_rate ?? '0'))
+    const [mediumRate, setMediumRate] = useState(String(settings?.medium_rate ?? '0'))
+    const [hardRate, setHardRate] = useState(String(settings?.hard_rate ?? '0'))
+    const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+        await onSave({
+            easy_rate: parseFloat(easyRate) || 0,
+            medium_rate: parseFloat(mediumRate) || 0,
+            hard_rate: parseFloat(hardRate) || 0,
+        })
+        setSaving(false)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+    }
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border p-6 max-w-md">
+            <p className="text-sm text-gray-500 mb-4">
+                Ustaw stawki godzinowe dla każdego poziomu trudności. Koszt robocizny jest dodawany do kosztu własnego wyceny.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {[
+                    { label: 'Łatwa (Easy)', value: easyRate, setter: setEasyRate },
+                    { label: 'Średnia (Medium)', value: mediumRate, setter: setMediumRate },
+                    { label: 'Trudna (Hard)', value: hardRate, setter: setHardRate },
+                ].map(({ label, value, setter }) => (
+                    <div key={label}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{label} — PLN/godz.</label>
+                        <input
+                            type="number"
+                            value={value}
+                            onChange={(e) => setter(e.target.value)}
+                            step="0.01"
+                            min="0"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="0.00"
+                        />
+                    </div>
+                ))}
+                <div className="flex items-center gap-3 pt-2">
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    >
+                        {saving ? 'Zapisywanie...' : 'Zapisz stawki'}
+                    </button>
+                    {saved && <span className="text-sm text-green-600">Zapisano!</span>}
+                </div>
+            </form>
         </div>
     )
 }

@@ -46,6 +46,8 @@ async def create_template(
         default_overlap_cm=template.default_overlap_cm,
         max_bryt_width_cm=template.max_bryt_width_cm,
         is_active=template.is_active,
+        labor_hours=template.labor_hours,
+        labor_difficulty=template.labor_difficulty,
     )
     for comp in template.components:
         db_template.components.append(

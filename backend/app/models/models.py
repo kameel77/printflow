@@ -38,6 +38,12 @@ class UserRole(enum.Enum):
     PRODUCTION = "PRODUCTION"
 
 
+class LaborDifficulty(enum.Enum):
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    HARD = "HARD"
+
+
 class Material(Base):
     __tablename__ = "materials"
     
@@ -114,13 +120,25 @@ class ProductTemplate(Base):
     default_overlap_cm = Column(Numeric(10, 2), default=Decimal("1.0"))
     max_bryt_width_cm = Column(Numeric(10, 2), nullable=True)
     is_active = Column(Boolean, default=True)
-    
+    labor_hours = Column(Numeric(10, 2), nullable=True, default=None)
+    labor_difficulty = Column(Enum(LaborDifficulty), nullable=True, default=None)
+
     # Tooltips
     tooltip_margin_w_cm = Column(String(500))
     tooltip_margin_h_cm = Column(String(500))
     tooltip_overlap_cm = Column(String(500))
-    
+
     components = relationship("TemplateComponent", back_populates="template", cascade="all, delete-orphan")
+
+
+class LaborRateSettings(Base):
+    __tablename__ = "labor_rate_settings"
+
+    id = Column(Integer, primary_key=True)
+    easy_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
+    medium_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
+    hard_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class TemplateComponent(Base):

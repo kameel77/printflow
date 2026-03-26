@@ -12,6 +12,7 @@ from app.models.models import (
     Process,
     ProductTemplate,
     TemplateComponent,
+    LaborRateSettings,
 )
 from app.schemas.schemas import CalculationRequest, CalculationResponse
 from app.engine.calculator import PrintFlowEngine
@@ -92,14 +93,25 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_margin_h_cm": float(t.default_margin_h_cm) if t.default_margin_h_cm else 0.0,
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
             "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
+            "labor_hours": float(t.labor_hours) if t.labor_hours else None,
+            "labor_difficulty": t.labor_difficulty.value if t.labor_difficulty else None,
             "components": components,
         }
+
+    settings_result = await db.execute(select(LaborRateSettings).where(LaborRateSettings.id == 1))
+    settings = settings_result.scalar_one_or_none()
+    labor_rate_settings = {
+        "easy_rate": float(settings.easy_rate),
+        "medium_rate": float(settings.medium_rate),
+        "hard_rate": float(settings.hard_rate),
+    } if settings else {}
 
     return {
         "processes": processes,
         "materials": materials,
         "material_variants": material_variants,
         "templates": templates,
+        "labor_rate_settings": labor_rate_settings,
     }
 
 
