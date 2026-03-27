@@ -14,7 +14,8 @@ from app.schemas.schemas import (
 from app.services.email import send_offer_email
 from app.services.offer_service import (
     create_offer, get_offer_by_id, list_offers, update_offer,
-    mark_offer_sent, duplicate_offer, add_variant_to_offer
+    mark_offer_sent, duplicate_offer, add_variant_to_offer,
+    delete_variant_from_offer
 )
 
 router = APIRouter()
@@ -129,6 +130,31 @@ async def api_add_offer_variant(
         )
 
     return await add_variant_to_offer(db, offer, data)
+
+
+@router.delete("/{offer_id}/variants/{variant_id}", status_code=204)
+async def api_delete_offer_variant(
+    offer_id: int,
+    variant_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a variant/calculation from an existing offer."""
+    offer = await get_offer_by_id(db, offer_id)
+    if not offer:
+        raise HTTPException(status_code=404, detail="Oferta nie znaleziona")
+
+    if offer.status != OfferStatus.DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail="Tylko szkice ofert mogą być edytowane (usuwanie wariantów)"
+        )
+
+    success = await delete_variant_from_offer(db, offer, variant_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Wariant nie należy do tej oferty lub nie istnieje")
+
+    return None
 
 
 @router.post("/{offer_id}/send", response_model=OfferResponse)

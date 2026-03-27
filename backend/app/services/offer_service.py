@@ -289,6 +289,36 @@ async def add_variant_to_offer(
     return await get_offer_by_id(db, offer.id)
 
 
+async def delete_variant_from_offer(
+    db: AsyncSession,
+    offer: Offer,
+    variant_id: int,
+) -> bool:
+    """Delete a variant from an offer."""
+    from sqlalchemy import delete as sa_delete
+    
+    variant = await db.execute(
+        select(OfferVariant).where(
+            OfferVariant.id == variant_id, 
+            OfferVariant.offer_id == offer.id
+        )
+    )
+    variant = variant.scalar_one_or_none()
+    if not variant:
+        return False
+        
+    await db.execute(
+        sa_delete(OfferVariantComponent).where(OfferVariantComponent.variant_id == variant.id)
+    )
+    await db.execute(
+        sa_delete(OfferVariant).where(OfferVariant.id == variant.id)
+    )
+    
+    offer.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
 async def mark_offer_sent(db: AsyncSession, offer: Offer) -> Offer:
     """Mark offer as sent."""
     offer.status = OfferStatus.SENT
