@@ -357,7 +357,10 @@ export default function Calculator() {
     
     try {
       setLoading(true)
-      await axios.post(`${API_URL}/offers/${activeOfferId}/variants`, payload)
+      const token = localStorage.getItem('access_token')
+      await axios.post(`${API_URL}/offers/${activeOfferId}/variants`, payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
       router.push(`/admin/offers/${activeOfferId}`) // Redirect back to offer
     } catch (err: any) {
       console.error(err)
