@@ -92,6 +92,27 @@ export default function OfferDetailPage() {
     const [savingClient, setSavingClient] = useState(false)
     const [isSendModalOpen, setIsSendModalOpen] = useState(false)
 
+    // Offer details editing
+    const [isEditingOfferDetails, setIsEditingOfferDetails] = useState(false)
+    const [editOfferTitle, setEditOfferTitle] = useState('')
+    const [editValidDays, setEditValidDays] = useState('14')
+    const [editInternalNote, setEditInternalNote] = useState('')
+    const [savingOfferDetails, setSavingOfferDetails] = useState(false)
+
+    // Change client
+    const [isChangingClient, setIsChangingClient] = useState(false)
+    const [clientSearch, setClientSearch] = useState('')
+    const [clientResults, setClientResults] = useState<any[]>([])
+    const [savingNewClient, setSavingNewClient] = useState(false)
+
+    // Global Adjustment
+    const [isAddingAdjustment, setIsAddingAdjustment] = useState(false)
+    const [adjustmentName, setAdjustmentName] = useState('Korekta sumaryczna')
+    const [adjustmentType, setAdjustmentType] = useState<'amount' | 'percentage'>('amount')
+    const [adjustmentValue, setAdjustmentValue] = useState('')
+    const [savingAdjustment, setSavingAdjustment] = useState(false)
+    const [editingAdjustmentId, setEditingAdjustmentId] = useState<number | null>(null)
+
     const offerId = params?.id as string
 
     const getAuthHeaders = useCallback(() => {
@@ -111,6 +132,25 @@ export default function OfferDetailPage() {
     }, [offerId, getAuthHeaders])
 
     useEffect(() => { fetchOffer() }, [fetchOffer])
+
+    // Client search
+    useEffect(() => {
+        if (clientSearch.length < 2) {
+            setClientResults([])
+            return
+        }
+        const timeoutId = setTimeout(async () => {
+            try {
+                const res = await axios.get(`${API_URL}/clients?search=${encodeURIComponent(clientSearch)}`, {
+                    headers: getAuthHeaders(),
+                })
+                setClientResults(res.data)
+            } catch (err) {
+                console.error(err)
+            }
+        }, 300)
+        return () => clearTimeout(timeoutId)
+    }, [clientSearch, getAuthHeaders])
 
     const formatCurrency = (value: number) =>
         new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', minimumFractionDigits: 2 }).format(value)
@@ -168,40 +208,157 @@ export default function OfferDetailPage() {
         }
     }
 
-    const handleEditInCalculator = () => {
-        if (!offer) return
-        // Pick the recommended variant or the first one
-        const variant = offer.variants.find((v) => v.is_recommended) || offer.variants[0]
-        if (!variant) return
+    const handleSelectNewClient = async (client: any) => {
+        setSavingNewClient(true)
+        try {
+            await axios.patch(`${API_URL}/offers/${offerId}`, {
+                client_id: client.id
+            }, { headers: getAuthHeaders() })
+            setIsChangingClient(false)
+            setClientSearch('')
+            fetchOffer()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd przypisania klienta')
+        } finally {
+            setSavingNewClient(false)
+        }
+    }
+
+    const handleEditOfferDetailsClick = () => {
+        if (offer) {
+            setEditOfferTitle(offer.title || '')
+            setEditInternalNote(offer.internal_note || '')
+            if (offer.valid_until) {
+                const days = Math.round((new Date(offer.valid_until).getTime() - Date.now()) / 86400000)
+                setEditValidDays(String(Math.max(1, days)))
+            } else {
+                setEditValidDays('14')
+            }
+            setIsEditingOfferDetails(true)
+        }
+    }
+
+    const handleSaveOfferDetails = async () => {
+        setSavingOfferDetails(true)
+        try {
+            const validUntil = new Date()
+            validUntil.setDate(validUntil.getDate() + parseInt(editValidDays || '14'))
+            
+            await axios.patch(`${API_URL}/offers/${offerId}`, {
+                title: editOfferTitle,
+                internal_note: editInternalNote,
+                valid_until: validUntil.toISOString()
+            }, { headers: getAuthHeaders() })
+            
+            setIsEditingOfferDetails(false)
+            fetchOffer()
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu szczegółów oferty')
+        } finally {
+            setSavingOfferDetails(false)
+        }
+    }
+
+    const handleAddGlobalAdjustment = async () => {
+        if (!offer || !adjustmentValue) return
+        
+        const val = parseFloat(adjustmentValue.replace(',', '.'))
+        if (isNaN(val) || val === 0) return
+
+        setSavingAdjustment(true)
+        try {
+            // Calculate current total net of existing standard variants to base % on
+            const currentTotalNet = offer.variants.reduce((sum, v) => sum + Number(v.total_price_net), 0)
+            const amountNet = adjustmentType === 'amount' ? val : currentTotalNet * (val / 100)
+            const amountGross = amountNet * 1.23 // 23% VAT assumed
+
+            const payload = {
+                name: adjustmentName || 'Korekta',
+                is_recommended: false,
+                width_cm: null,
+                height_cm: null,
+                quantity: 1,
+                total_price_net: amountNet,
+                total_price_gross: amountGross,
+                sort_order: 999, // push to bottom
+                components: [
+                    {
+                        name_snapshot: adjustmentName || 'Korekta',
+                        type: 'ADJUSTMENT',
+                        quantity: 1,
+                        unit: 'szt.',
+                        unit_price: amountNet,
+                        total_price: amountNet,
+                        visible_to_client: true
+                    }
+                ],
+                // pseudo-snapshot empty to avoid error
+                calculation_snapshot: { is_global_adjustment: true } 
+            }
+
+            if (editingAdjustmentId) {
+                // First delete the old adjustment
+                await axios.delete(`${API_URL}/offers/${offerId}/variants/${editingAdjustmentId}`, {
+                    headers: getAuthHeaders()
+                })
+            }
+
+            await axios.post(`${API_URL}/offers/${offerId}/variants`, payload, {
+                headers: getAuthHeaders()
+            })
+            
+            setIsAddingAdjustment(false)
+            setEditingAdjustmentId(null)
+            setAdjustmentValue('')
+            setAdjustmentName('Korekta sumaryczna')
+            fetchOffer()
+        } catch (err: any) {
+            console.error(err)
+            alert(err.response?.data?.detail || 'Błąd zapisu korekty')
+        } finally {
+            setSavingAdjustment(false)
+        }
+    }
+
+    const cancelAdjustment = () => {
+        setIsAddingAdjustment(false)
+        setEditingAdjustmentId(null)
+        setAdjustmentValue('')
+        setAdjustmentName('Korekta sumaryczna')
+        setAdjustmentType('amount')
+    }
+
+    const handleEditAdjustment = (variant: any) => {
+        setEditingAdjustmentId(variant.id)
+        setAdjustmentName(variant.name)
+        setAdjustmentType('amount') // Re-edit always defaults to amount for simplicity, using the current total
+        setAdjustmentValue(String(variant.total_price_net))
+        setIsAddingAdjustment(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    const handleEditVariant = (variant: any) => {
+        if (!offer || !variant) return
 
         // Pull everything we can from calculation_snapshot
-        const snap = (variant as any).calculation_snapshot || {}
-
-        // Reconstruct adjustments from components tagged as ADJUSTMENT
-        const adjustments = variant.components
-            .filter((c) => c.type === 'ADJUSTMENT')
-            .map((c) => ({
-                id: String(Date.now() + Math.random()),
-                desc: c.name_snapshot,
-                type: c.total_price < 0 ? 'percentage' : 'amount',
-                value: String(Math.abs(c.total_price)),
-            }))
+        const snap = variant.calculation_snapshot || {}
 
         const editData = {
-            templateId: (variant as any).template_id || snap.template_id || '',
-            width: variant.width_cm ? String(Number(variant.width_cm)) : '',
-            height: variant.height_cm ? String(Number(variant.height_cm)) : '',
-            quantity: variant.quantity ? String(variant.quantity) : '1',
+            templateId: variant.template_id || snap.templateId || '',
+            width: variant.width_cm ? String(Number(variant.width_cm)) : snap.width || '',
+            height: variant.height_cm ? String(Number(variant.height_cm)) : snap.height || '',
+            quantity: variant.quantity ? String(variant.quantity) : snap.quantity || '1',
             customerType: snap.customerType || 'B2C',
-            selectedOptions: snap.selected_options || [],
-            overlapOverride: snap.overlap_used_cm ? String(snap.overlap_used_cm) : '',
-            adjustments,
+            selectedOptions: snap.selectedOptions || [],
+            overlapOverride: snap.overlapOverride || '',
+            adjustments: snap.adjustments || [],
         }
 
         sessionStorage.setItem('editOfferCalculation', JSON.stringify(editData))
         // Also carry the offer id so we can update it after re-calculation
         sessionStorage.setItem('editingOfferId', String(offer.id))
-        router.push('/')
+        sessionStorage.setItem('editingVariantId', String(variant.id))
+        router.push('/') // Note: the default calculator is at the root or /admin/calculator depending on the routing.
     }
 
     const publicLink = offer ? `${PUBLIC_BASE}/offer/${offer.token}` : ''
@@ -232,6 +389,32 @@ export default function OfferDetailPage() {
 
     const statusCfg = STATUS_CONFIG[offer.status] || { label: offer.status, color: 'bg-gray-100 text-gray-700' }
 
+    const variantsWithPrice = offer.variants || [];
+    const totalNet = variantsWithPrice.reduce((sum, v) => sum + Number(v.total_price_net), 0);
+    const totalGross = variantsWithPrice.reduce((sum, v) => sum + Number(v.total_price_gross), 0);
+    const totalCogs = variantsWithPrice.reduce((sum, v) => {
+        const snap = (v as any).calculation_snapshot || {};
+        if (snap.is_global_adjustment) return sum;
+        
+        let cogs = 0;
+        if (snap.result?.total_cost_cogs !== undefined) {
+            cogs = Number(snap.result.total_cost_cogs);
+        } else if (snap.total_cost_cogs !== undefined) {
+            cogs = Number(snap.total_cost_cogs);
+        } else {
+            // Backward compatibility for old variants where COGS wasn't saved directly
+            // Calculate backwards from margin_percentage and total_price_net
+            // Margin = (Price - Cost) / Cost * 100 => Cost = Price / (1 + Margin/100)
+            const marginPct = snap.finalMarginPercentage ?? snap.result?.margin_percentage ?? 0;
+            const price = Number(v.total_price_net);
+            cogs = price / (1 + (Number(marginPct) / 100));
+        }
+        
+        return sum + cogs;
+    }, 0);
+    const marginVal = totalNet - totalCogs;
+    const marginPct = totalCogs > 0 ? (marginVal / totalCogs) * 100 : (totalNet > 0 ? 100 : 0);
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -247,17 +430,6 @@ export default function OfferDetailPage() {
                 actions={
                     <>
                         {offer.status === 'DRAFT' && (
-                            <button
-                                onClick={handleEditInCalculator}
-                                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edytuj w kalkulatorze
-                            </button>
-                        )}
-                        {offer.status === 'DRAFT' && (
                             <button onClick={() => setIsSendModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -268,6 +440,11 @@ export default function OfferDetailPage() {
                         <button onClick={handleDuplicate} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                             Duplikuj
                         </button>
+                        {offer.status === 'DRAFT' && (
+                            <Link href={`/admin/offers/${offer.id}/edit`} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                Edytuj ofertę pełna
+                            </Link>
+                        )}
                         <button onClick={copyLink} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -285,11 +462,54 @@ export default function OfferDetailPage() {
                     <div className="bg-white rounded-xl shadow-sm border p-5">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-sm font-medium text-gray-500">Klient</h3>
-                            {offer.client && !isEditingClient && (
-                                <button onClick={handleEditClientClick} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Edytuj</button>
+                            {!isEditingClient && !isChangingClient && (
+                                <div className="flex gap-2">
+                                    {offer.client && <button onClick={handleEditClientClick} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Popraw dane</button>}
+                                    {offer.status === 'DRAFT' && <button onClick={() => setIsChangingClient(true)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">{offer.client ? 'Zmień klienta' : 'Przypisz klienta'}</button>}
+                                </div>
                             )}
                         </div>
-                        {offer.client ? (
+                        {isChangingClient ? (
+                            <div className="space-y-3">
+                                <label className="block text-xs text-gray-500 mb-1">Wyszukaj i przypisz klienta</label>
+                                <input
+                                    type="text"
+                                    value={clientSearch}
+                                    onChange={(e) => setClientSearch(e.target.value)}
+                                    placeholder="Wpisz nazwę, email lub NIP..."
+                                    className="w-full text-sm border border-gray-300 rounded-lg py-2 pl-3 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                {clientSearch.length > 2 && (
+                                    <div className="border border-gray-200 rounded-md overflow-hidden bg-white max-h-48 overflow-y-auto">
+                                        {clientResults.length === 0 ? (
+                                            <div className="py-2 text-sm text-center text-gray-500">Brak wyników</div>
+                                        ) : (
+                                            <ul className="divide-y divide-gray-100">
+                                                {clientResults.map(client => (
+                                                    <li key={client.id}>
+                                                        <button 
+                                                            type="button" 
+                                                            disabled={savingNewClient}
+                                                            onClick={() => handleSelectNewClient(client)}
+                                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:outline-none"
+                                                        >
+                                                            <div className="font-medium text-sm text-gray-900">{client.name}</div>
+                                                            <div className="text-xs text-gray-500 flex gap-2">
+                                                                {client.email && <span>{client.email}</span>}
+                                                                {client.company_nip && <span>NIP: {client.company_nip}</span>}
+                                                            </div>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={() => { setIsChangingClient(false); setClientSearch(''); }} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-full">Zakończ zmianę / Anuluj</button>
+                                </div>
+                            </div>
+                        ) : offer.client ? (
                             isEditingClient ? (
                                 <div className="space-y-3">
                                     <div>
@@ -387,26 +607,53 @@ export default function OfferDetailPage() {
 
                     {/* Details */}
                     <div className="bg-white rounded-xl shadow-sm border p-5">
-                        <h3 className="text-sm font-medium text-gray-500 mb-3">Szczegóły</h3>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Ważna do:</span>
-                                <span className="text-gray-900">{offer.valid_until ? formatDate(offer.valid_until) : '—'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Utworzona:</span>
-                                <span className="text-gray-900">{formatDate(offer.created_at)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Przygotował(a):</span>
-                                <span className="text-gray-900">{offer.user ? offer.user.full_name || offer.user.email : 'Brak danych'}</span>
-                            </div>
-                            {offer.internal_note && (
-                                <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-yellow-800 text-xs">
-                                    <strong>Notatka:</strong> {offer.internal_note}
-                                </div>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-sm font-medium text-gray-500">Szczegóły</h3>
+                            {offer.status === 'DRAFT' && !isEditingOfferDetails && (
+                                <button onClick={handleEditOfferDetailsClick} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Edytuj szczegóły</button>
                             )}
                         </div>
+                        
+                        {isEditingOfferDetails ? (
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Tytuł oferty</label>
+                                    <input type="text" value={editOfferTitle} onChange={e => setEditOfferTitle(e.target.value)} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Ważność (dni)</label>
+                                    <input type="number" value={editValidDays} onChange={e => setEditValidDays(e.target.value)} min="1" max="365" className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Notatka wewnętrzna</label>
+                                    <textarea value={editInternalNote} onChange={e => setEditInternalNote(e.target.value)} rows={3} className="w-full text-sm border border-gray-300 rounded-md p-1.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"/>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={handleSaveOfferDetails} disabled={savingOfferDetails} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors w-full">{savingOfferDetails ? 'Zapisywanie...' : 'Zapisz zamiany'}</button>
+                                    <button onClick={() => setIsEditingOfferDetails(false)} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-full">Gotowe / Anuluj</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Ważna do:</span>
+                                    <span className="text-gray-900">{offer.valid_until ? formatDate(offer.valid_until) : '—'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Utworzona:</span>
+                                    <span className="text-gray-900">{formatDate(offer.created_at)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Przygotował(a):</span>
+                                    <span className="text-gray-900">{offer.user ? offer.user.full_name || offer.user.email : 'Brak danych'}</span>
+                                </div>
+                                {offer.internal_note && (
+                                    <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-yellow-800 text-xs">
+                                        <strong>Notatka:</strong> {offer.internal_note}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -418,50 +665,169 @@ export default function OfferDetailPage() {
                     </div>
                 )}
 
-                {/* Variants */}
+                {/* Variants -> Pozycje */}
                 <div className="bg-white rounded-xl shadow-sm border p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Warianty ({offer.variants.length})</h3>
-                    <div className="space-y-4">
-                        {offer.variants
-                            .sort((a, b) => a.sort_order - b.sort_order)
-                            .map((v) => {
-                                const isAccepted = offer.accepted_variant_id === v.id
-                                return (
-                                    <div key={v.id} className={`rounded-xl border-2 p-5 ${isAccepted ? 'border-green-300 bg-green-50/30' : v.is_recommended ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'}`}>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="font-semibold text-gray-900">{v.name}</h4>
-                                                {v.is_recommended && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Polecany</span>}
-                                                {isAccepted && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ Wybrany przez klienta</span>}
-                                            </div>
-                                            <div className="text-right">
-                                                {offer.client?.company_name || offer.client?.company_nip ? (
-                                                    <>
-                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
-                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
-                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Kalkulacje / Pozycje {offer.variants.length > 0 ? `(${offer.variants.length})` : ''}</h3>
+                        {offer.status === 'DRAFT' && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setIsAddingAdjustment(true)}
+                                    className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors inline-flex items-center gap-1.5"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                    Dodaj rabat / koszt
+                                </button>
+                                <button
+                                    onClick={() => router.push(`/?offerId=${offer.id}`)}
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    Dodaj nową kalkulację
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                                        <div className="flex gap-4 text-sm text-gray-600 mb-3">
-                                            {v.width_cm && v.height_cm && <span>Wymiary: {Number(v.width_cm)}×{Number(v.height_cm)} cm</span>}
-                                            {v.quantity && <span>Ilość: {v.quantity} szt.</span>}
-                                        </div>
+                    {isAddingAdjustment && (
+                        <div className="mb-6 p-4 border border-purple-100 bg-purple-50/50 rounded-xl">
+                            <h4 className="text-sm font-medium text-purple-900 mb-3">{editingAdjustmentId ? 'Edytuj korektę' : 'Dodaj korektę do zamówienia'}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Nazwa (np. Rabat stałego klienta)</label>
+                                    <input type="text" value={adjustmentName} onChange={e => setAdjustmentName(e.target.value)} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Nazwa pozycji"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Typ</label>
+                                    <select value={adjustmentType} onChange={e => setAdjustmentType(e.target.value as 'amount' | 'percentage')} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                        <option value="amount">Kwota (PLN)</option>
+                                        <option value="percentage">Procent (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Wartość (+/-)</label>
+                                    <input type="number" step="0.01" value={adjustmentValue} onChange={e => setAdjustmentValue(e.target.value)} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="-100 lub -10"/>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-4 justify-end">
+                                <button onClick={cancelAdjustment} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Anuluj</button>
+                                <button onClick={handleAddGlobalAdjustment} disabled={savingAdjustment || !adjustmentValue} className="px-4 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
+                                    {savingAdjustment ? 'Zapisywanie...' : 'Zapisz korektę'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
-                                        <div className="rounded-lg border overflow-hidden">
+                    {offer.variants.length === 0 ? (
+                        <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                            Brak przeliczonych pozycji w ofercie. Kliknij "Dodaj nową kalkulację", aby rozpocząć.
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-4">
+                                {offer.variants
+                                    .sort((a, b) => a.sort_order - b.sort_order)
+                                    .map((v, idx) => {
+                                        const isAccepted = offer.accepted_variant_id === v.id
+                                        return (
+                                            <div key={v.id} className={`rounded-xl border-2 p-5 ${isAccepted ? 'border-green-300 bg-green-50/30' : v.is_recommended ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'}`}>
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>
+                                                            <h4 className="font-semibold text-gray-900">{v.name}</h4>
+                                                            {v.is_recommended && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Polecany</span>}
+                                                            {isAccepted && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ Wybrany przez klienta</span>}
+                                                        </div>
+                                                        <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                                                            {v.width_cm && v.height_cm && <span>Wymiary: {Number(v.width_cm)}×{Number(v.height_cm)} cm</span>}
+                                                            {v.quantity && <span>Ilość: {v.quantity} szt.</span>}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        {offer.client?.company_name || offer.client?.company_nip ? (
+                                                            <>
+                                                                <div className="flex items-center gap-3 w-full justify-end">
+                                                                    <div className="text-right">
+                                                                        <p className="text-lg font-bold text-gray-900 leading-tight">
+                                                                            {formatCurrency(Number(v.total_price_net))} <span className="text-xs font-normal text-gray-500">netto</span>
+                                                                        </p>
+                                                                        <p className="text-sm font-medium text-gray-600">
+                                                                            {formatCurrency(Number(v.total_price_gross))} <span className="text-xs font-normal text-gray-500">brutto</span>
+                                                                        </p>
+                                                                    </div>
+                                                                    {offer.status === 'DRAFT' && (
+                                                                        (v as any).calculation_snapshot?.is_global_adjustment ? (
+                                                                            <button
+                                                                                onClick={() => handleEditAdjustment(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Zmień kwotę
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => handleEditVariant(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Edytuj i zastąp w ofercie
+                                                                            </button>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex items-center gap-3 w-full justify-end">
+                                                                    <div className="text-right">
+                                                                        <p className="text-lg font-bold text-gray-900 leading-tight">
+                                                                            {formatCurrency(Number(v.total_price_gross))} <span className="text-xs font-normal text-gray-500">brutto</span>
+                                                                        </p>
+                                                                        <p className="text-sm font-medium text-gray-600">
+                                                                            {formatCurrency(Number(v.total_price_net))} <span className="text-xs font-normal text-gray-500">netto</span>
+                                                                        </p>
+                                                                    </div>
+                                                                    {offer.status === 'DRAFT' && (
+                                                                        (v as any).calculation_snapshot?.is_global_adjustment ? (
+                                                                            <button
+                                                                                onClick={() => handleEditAdjustment(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Zmień kwotę
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => handleEditVariant(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Edytuj i zastąp w ofercie
+                                                                            </button>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                        <div className="mt-3 rounded-lg border overflow-hidden">
                                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                                 <thead className="bg-gray-50">
                                                     <tr>
                                                         <th className="px-4 py-2 text-left font-medium text-gray-500">Składnik</th>
                                                         <th className="px-4 py-2 text-left font-medium text-gray-500">Typ</th>
-                                                        <th className="px-4 py-2 text-right font-medium text-gray-500">Kwota netto</th>
-                                                        <th className="px-4 py-2 text-center font-medium text-gray-500">Klient</th>
+                                                        <th className="font-semibold text-gray-500 py-3 1/6 text-right w-32 border-b border-gray-100 uppercase tracking-widest text-[10px]">
+                                                            Kwota netto
+                                                        </th>
+                                                        <th className="font-semibold text-gray-500 py-3 1/6 text-center w-16 border-b border-gray-100 pr-2">
+                                                            <span className="flex items-center justify-center gap-1 text-gray-500" title="Czy pozycja jest widoczna dla klienta na kalkulacji">
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                            </span>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
@@ -489,7 +855,35 @@ export default function OfferDetailPage() {
                                     </div>
                                 )
                             })}
-                    </div>
+                        </div>
+                        
+                        {offer.variants.length > 0 && (
+                            <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <h4 className="font-medium text-gray-700 text-lg">Podsumowanie całej oferty:</h4>
+                                    <div className="mt-1 flex items-center gap-3">
+                                        <div className="px-3 py-1 bg-white border border-green-200 rounded-lg shadow-sm">
+                                            <span className="text-xs text-green-700 font-medium tracking-wide uppercase">Zysk (Marża)</span>
+                                            <p className="text-sm font-bold text-green-700">
+                                                {formatCurrency(marginVal)} ({marginPct.toFixed(1)}%)
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-gray-500">Widoczne tylko dla administratora</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-right">
+                                    <p className="text-2xl font-bold text-gray-900 leading-tight">
+                                        {formatCurrency(totalNet)} <span className="text-sm font-normal text-gray-500">netto</span>
+                                    </p>
+                                    <p className="text-sm font-medium text-gray-600 mt-1">
+                                        {formatCurrency(totalGross)} <span className="text-xs font-normal text-gray-500">brutto</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        </>
+                    )}
                 </div>
 
                 {/* Tracking Events */}

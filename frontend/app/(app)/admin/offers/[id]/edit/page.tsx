@@ -142,6 +142,79 @@ export default function EditOfferPage() {
                     height: v.height_cm ? String(Number(v.height_cm)) : '',
                     quantity: v.quantity ? String(v.quantity) : '',
                 }))
+                // Apply pending calculation if coming from calculator
+                const calcJson = sessionStorage.getItem('offerCalculation')
+                if (calcJson) {
+                    try {
+                        const calc = JSON.parse(calcJson)
+                        if (calc.editingOfferId === offerId) {
+                            sessionStorage.removeItem('offerCalculation')
+                            setHasNewCalc(true)
+
+                            const components = (calc.result?.tech_view || []).map((tv: any) => ({
+                                name_snapshot: tv.name,
+                                type: tv.type,
+                                quantity: tv.qty,
+                                unit: tv.unit,
+                                unit_price: tv.price_net / (tv.qty || 1),
+                                total_price: tv.price_net,
+                                visible_to_client: true,
+                            }))
+
+                            calc.adjustments?.forEach((adj: any) => {
+                                const val = parseFloat(adj.value.replace(',', '.'))
+                                if (isNaN(val) || val === 0) return
+                                const baseTotalNet = calc.result?.total_price_net || 0
+                                const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
+                                components.push({
+                                    name_snapshot: adj.desc || 'Korekta wyceny',
+                                    type: 'ADJUSTMENT',
+                                    quantity: null,
+                                    unit: null,
+                                    unit_price: null,
+                                    total_price: amountNet,
+                                    visible_to_client: true,
+                                })
+                            })
+
+                            const updatedVariant: VariantDraft = {
+                                id: calc.editingVariantId || Date.now().toString(),
+                                dbId: calc.editingVariantId ? Number(calc.editingVariantId) : undefined,
+                                name: 'Skalkulowany wariant',
+                                isRecommended: calc.editingVariantId ? false : true,
+                                totalPriceNet: calc.finalTotalNet,
+                                totalPriceGross: calc.finalTotalGross,
+                                calculationSnapshot: calc.result,
+                                components,
+                                templateId: calc.templateId,
+                                width: calc.width,
+                                height: calc.height,
+                                quantity: calc.quantity,
+                            }
+
+                            if (calc.editingVariantId) {
+                                // Replace existing variant
+                                const idx = existingVariants.findIndex(v => String(v.dbId) === String(calc.editingVariantId))
+                                if (idx >= 0) {
+                                    updatedVariant.name = existingVariants[idx].name
+                                    updatedVariant.isRecommended = existingVariants[idx].isRecommended
+                                    existingVariants[idx] = updatedVariant
+                                } else {
+                                    existingVariants.push(updatedVariant)
+                                }
+                            } else {
+                                // Add new variant
+                                existingVariants.push(updatedVariant)
+                                if (!o.title && !calc.title && calc.templateName) {
+                                    setTitle(`${calc.templateName} ${calc.width}×${calc.height} cm`)
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse calculation:', e)
+                    }
+                }
+
                 setVariants(existingVariants)
             } catch (err: any) {
                 setError('Nie udało się załadować oferty')
@@ -151,64 +224,6 @@ export default function EditOfferPage() {
         }
         fetchOffer()
     }, [offerId, getAuthHeaders])
-
-    // Load new calculation from sessionStorage (if coming from calculator)
-    useEffect(() => {
-        const stored = sessionStorage.getItem('offerCalculation')
-        if (!stored) return
-        try {
-            const calc = JSON.parse(stored)
-            if (calc.editingOfferId !== offerId) return
-            sessionStorage.removeItem('offerCalculation')
-            setHasNewCalc(true)
-
-            const components = (calc.result.tech_view || []).map((tv: any) => ({
-                name_snapshot: tv.name,
-                type: tv.type,
-                quantity: tv.qty,
-                unit: tv.unit,
-                unit_price: tv.price_net / (tv.qty || 1),
-                total_price: tv.price_net,
-                visible_to_client: true,
-            }))
-
-            calc.adjustments?.forEach((adj: any) => {
-                const val = parseFloat(adj.value.replace(',', '.'))
-                if (isNaN(val) || val === 0) return
-                const baseTotalNet = calc.result.total_price_net
-                const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
-                components.push({
-                    name_snapshot: adj.desc || 'Korekta wyceny',
-                    type: 'ADJUSTMENT',
-                    quantity: null,
-                    unit: null,
-                    unit_price: null,
-                    total_price: amountNet,
-                    visible_to_client: true,
-                })
-            })
-
-            const updatedVariant: VariantDraft = {
-                id: Date.now().toString(),
-                name: 'Standard',
-                isRecommended: true,
-                totalPriceNet: calc.finalTotalNet,
-                totalPriceGross: calc.finalTotalGross,
-                calculationSnapshot: calc.result,
-                components,
-                templateId: calc.templateId,
-                width: calc.width,
-                height: calc.height,
-                quantity: calc.quantity,
-            }
-            setVariants([updatedVariant])
-            if (!calc.title && calc.templateName) {
-                setTitle(`${calc.templateName} ${calc.width}×${calc.height} cm`)
-            }
-        } catch (e) {
-            console.error('Failed to parse calculation:', e)
-        }
-    }, [offerId])
 
     const removeVariant = (id: string) => setVariants(variants.filter((v) => v.id !== id))
     const toggleRecommended = (id: string) => setVariants(variants.map((v) => ({ ...v, isRecommended: v.id === id })))
