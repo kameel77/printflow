@@ -81,6 +81,9 @@ export default function NewOfferPage() {
     // Variants
     const [variants, setVariants] = useState<VariantDraft[]>([])
 
+    // State Hydration
+    const [isInitialized, setIsInitialized] = useState(false)
+
     // UI
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -94,13 +97,33 @@ export default function NewOfferPage() {
     const formatCurrency = (value: number): string =>
         new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', minimumFractionDigits: 2 }).format(value)
 
-    // Load calculation from sessionStorage
+    // Load calculation and draft state from sessionStorage
     useEffect(() => {
+        let initialVariants: VariantDraft[] = []
+        let initialTitle = ''
+
+        // 1. Restore draft state
+        const draftStr = sessionStorage.getItem('newOfferState')
+        if (draftStr) {
+            try {
+                const s = JSON.parse(draftStr)
+                if (s.selectedClient) setSelectedClient(s.selectedClient)
+                if (s.title) { setTitle(s.title); initialTitle = s.title; }
+                if (s.internalNote) setInternalNote(s.internalNote)
+                if (s.validDays) setValidDays(s.validDays)
+                if (s.variants) { setVariants(s.variants); initialVariants = s.variants; }
+            } catch (e) {}
+        }
+
+        // 2. Add new calc if returning from calculator
         const stored = sessionStorage.getItem('offerCalculation')
         if (stored) {
             try {
                 const calc: CalcData = JSON.parse(stored)
-                setTitle(calc.templateName ? `${calc.templateName} ${calc.width}×${calc.height} cm` : '')
+                if (!initialTitle && calc.templateName) {
+                    const newT = `${calc.templateName} ${calc.width}×${calc.height} cm`
+                    setTitle(newT)
+                }
 
                 const components = calc.result.tech_view.map((tv: any) => ({
                     name_snapshot: tv.name,
@@ -131,8 +154,8 @@ export default function NewOfferPage() {
 
                 const variant: VariantDraft = {
                     id: Date.now().toString(),
-                    name: 'Standard',
-                    isRecommended: true,
+                    name: 'Skalkulowany wariant',
+                    isRecommended: initialVariants.length === 0,
                     totalPriceNet: calc.finalTotalNet,
                     totalPriceGross: calc.finalTotalGross,
                     calculationSnapshot: calc.result,
@@ -142,13 +165,29 @@ export default function NewOfferPage() {
                     height: calc.height,
                     quantity: calc.quantity,
                 }
-                setVariants([variant])
+                
+                initialVariants = [...initialVariants, variant]
+                setVariants(initialVariants)
                 sessionStorage.removeItem('offerCalculation')
             } catch (e) {
                 console.error('Failed to parse calculation data:', e)
             }
         }
+        
+        setIsInitialized(true)
     }, [])
+
+    // 3. Auto-save current state to sessionStorage
+    useEffect(() => {
+        if (!isInitialized) return
+        sessionStorage.setItem('newOfferState', JSON.stringify({
+            selectedClient,
+            title,
+            internalNote,
+            validDays,
+            variants
+        }))
+    }, [isInitialized, selectedClient, title, internalNote, validDays, variants])
 
     // Client search
     useEffect(() => {
@@ -240,6 +279,7 @@ export default function NewOfferPage() {
                 headers: getAuthHeaders(),
             })
 
+            sessionStorage.removeItem('newOfferState')
             router.push('/admin/offers')
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Błąd zapisu oferty')
