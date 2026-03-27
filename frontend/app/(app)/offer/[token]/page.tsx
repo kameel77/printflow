@@ -49,7 +49,6 @@ export default function PublicOfferPage() {
     const [offer, setOffer] = useState<PublicOffer | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
     const [comment, setComment] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
@@ -65,10 +64,6 @@ export default function PublicOfferPage() {
             try {
                 const res = await axios.get(`${API_URL}/public/offer/${token}`)
                 setOffer(res.data)
-                // Auto-select recommended variant
-                const recommended = res.data.variants.find((v: OfferVariant) => v.is_recommended)
-                if (recommended) setSelectedVariantId(recommended.id)
-                else if (res.data.variants.length === 1) setSelectedVariantId(res.data.variants[0].id)
             } catch (err: any) {
                 if (err.response?.status === 410) {
                     setError('Ta oferta wygasła.')
@@ -83,18 +78,14 @@ export default function PublicOfferPage() {
     }, [token])
 
     const handleAccept = async () => {
-        if (!selectedVariantId && offer && offer.variants.length > 1) {
-            alert('Proszę wybrać wariant oferty.')
-            return
-        }
         setSubmitting(true)
         try {
             await axios.post(`${API_URL}/public/offer/${token}/accept`, {
-                variant_id: selectedVariantId,
+                variant_id: null,
                 comment: comment || null,
             })
             setSubmitted(true)
-            setOffer((prev) => prev ? { ...prev, status: 'ACCEPTED', accepted_variant_id: selectedVariantId } : prev)
+            setOffer((prev) => prev ? { ...prev, status: 'ACCEPTED' } : prev)
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Wystąpił błąd.')
         } finally {
@@ -201,42 +192,28 @@ export default function PublicOfferPage() {
                     </div>
                 )}
 
-                {/* Variants */}
+                {/* Variants (Order Items) */}
                 <div className="space-y-4">
-                    {offer.variants.map((v) => {
-                        const isSelected = selectedVariantId === v.id
-                        const isAccepted = offer.accepted_variant_id === v.id
+                    {offer.variants.map((v, idx) => {
                         const visibleComponents = v.components.filter((c) => c.visible_to_client)
 
                         return (
                             <div
                                 key={v.id}
-                                onClick={() => !isResolved && offer.variants.length > 1 && setSelectedVariantId(v.id)}
-                                className={`bg-white rounded-2xl shadow-sm border-2 p-6 transition-all ${isAccepted ? 'border-green-400 ring-2 ring-green-200' :
-                                        isSelected ? 'border-blue-400 ring-2 ring-blue-200' :
-                                            'border-gray-200 hover:border-gray-300'
-                                    } ${!isResolved && offer.variants.length > 1 ? 'cursor-pointer' : ''}`}
+                                className={`bg-white rounded-2xl shadow-sm border-2 p-6 transition-all border-gray-200`}
                             >
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
-                                        {!isResolved && offer.variants.length > 1 && (
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-gray-300'}`}>
-                                                {isSelected && <div className="w-3 h-3 rounded-full bg-blue-500" />}
-                                            </div>
-                                        )}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">{v.name}</h3>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>
+                                                <h3 className="text-lg font-semibold text-gray-900">{v.name}</h3>
+                                            </div>
                                             <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                                                 {v.width_cm && v.height_cm && <span>{Number(v.width_cm)}×{Number(v.height_cm)} cm</span>}
                                                 {v.quantity && <span>{v.quantity} szt.</span>}
                                             </div>
                                         </div>
-                                        {v.is_recommended && (
-                                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">★ Polecany</span>
-                                        )}
-                                        {isAccepted && (
-                                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">✓ Wybrany</span>
-                                        )}
                                     </div>
                                     <div className="text-right">
                                         {offer.company_name ? (
@@ -271,6 +248,29 @@ export default function PublicOfferPage() {
                         )
                     })}
                 </div>
+
+                {/* Total Sum */}
+                {offer.variants && offer.variants.length > 0 && (
+                    <div className="bg-blue-50/50 rounded-2xl shadow-sm border border-blue-100 p-6 flex flex-col md:flex-row items-start md:items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900">Podsumowanie zamówienia</h3>
+                            <p className="text-sm text-gray-500 mt-1">Suma wszystkich pozycji ({offer.variants.length}) w ofercie</p>
+                        </div>
+                        <div className="mt-4 md:mt-0 text-right">
+                            {offer.company_name ? (
+                                <>
+                                    <p className="text-3xl font-bold text-gray-900">{formatCurrency(offer.variants.reduce((sum, v) => sum + v.total_price_net, 0))} <span className="text-base font-normal text-gray-500">netto</span></p>
+                                    <p className="text-base text-gray-500">{formatCurrency(offer.variants.reduce((sum, v) => sum + v.total_price_gross, 0))} brutto</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-3xl font-bold text-gray-900">{formatCurrency(offer.variants.reduce((sum, v) => sum + v.total_price_gross, 0))} <span className="text-base font-normal text-gray-500">brutto</span></p>
+                                    <p className="text-base text-gray-500">{formatCurrency(offer.variants.reduce((sum, v) => sum + v.total_price_net, 0))} netto</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Action Section */}
                 {!isResolved && (

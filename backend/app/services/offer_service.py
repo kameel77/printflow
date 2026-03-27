@@ -245,6 +245,50 @@ async def update_offer(
     return await get_offer_by_id(db, offer.id)
 
 
+async def add_variant_to_offer(
+    db: AsyncSession,
+    offer: Offer,
+    v_data: OfferVariantCreate,
+) -> Offer:
+    """Append a single new variant to an existing offer without replacing others."""
+    # Determine the next sort_order
+    current_orders = [v.sort_order for v in offer.variants if v.sort_order is not None]
+    next_order = max(current_orders) + 1 if current_orders else 0
+
+    variant = OfferVariant(
+        offer_id=offer.id,
+        name=v_data.name,
+        is_recommended=v_data.is_recommended,
+        template_id=v_data.template_id,
+        width_cm=v_data.width_cm,
+        height_cm=v_data.height_cm,
+        quantity=v_data.quantity,
+        total_price_net=v_data.total_price_net,
+        total_price_gross=v_data.total_price_gross,
+        calculation_snapshot=v_data.calculation_snapshot,
+        sort_order=v_data.sort_order if v_data.sort_order is not None else next_order,
+    )
+    db.add(variant)
+    await db.flush()
+
+    for c_data in v_data.components:
+        component = OfferVariantComponent(
+            variant_id=variant.id,
+            name_snapshot=c_data.name_snapshot,
+            type=c_data.type,
+            quantity=c_data.quantity,
+            unit=c_data.unit,
+            unit_price=c_data.unit_price,
+            total_price=c_data.total_price,
+            visible_to_client=c_data.visible_to_client,
+        )
+        db.add(component)
+
+    offer.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return await get_offer_by_id(db, offer.id)
+
+
 async def mark_offer_sent(db: AsyncSession, offer: Offer) -> Offer:
     """Mark offer as sent."""
     offer.status = OfferStatus.SENT

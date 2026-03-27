@@ -77,6 +77,7 @@ export default function Calculator() {
   const [adjustments, setAdjustments] = useState<Adjustment[]>([])
   const [productionDetailsOpen, setProductionDetailsOpen] = useState(false)
   const [techDetailsOpen, setTechDetailsOpen] = useState(true)
+  const [activeOfferId, setActiveOfferId] = useState<string | null>(null)
 
   // State
   const [loading, setLoading] = useState(false)
@@ -89,6 +90,10 @@ export default function Calculator() {
   // Fetch templates on mount
   useEffect(() => {
     fetchTemplates()
+    
+    // Check if we are adding a variant to an existing offer
+    const search = new URLSearchParams(window.location.search)
+    setActiveOfferId(search.get('offerId'))
   }, [])
 
   // Restore state when editing a draft offer (triggered after templates load)
@@ -321,15 +326,71 @@ export default function Calculator() {
   const requiredComponents = currentTemplate?.components?.filter(c => c.is_required) || []
   const optionalComponents = currentTemplate?.components?.filter(c => !c.is_required) || []
 
+  // Add Variant directly to existing offer
+  const handleAddVariantToOffer = async () => {
+    if (!result || !activeOfferId) return
+    
+    // Build the variant payload matching the expected API model
+    const payload = {
+      template_id: parseInt(templateId),
+      name: currentTemplate?.name || 'Wariant', 
+      is_recommended: false,
+      width_cm: parseFloat(width),
+      height_cm: parseFloat(height),
+      quantity: parseInt(quantity),
+      total_price_net: finalTotalNet,
+      total_price_gross: finalTotalGross,
+      calculation_snapshot: {
+          width,
+          height,
+          quantity,
+          customerType,
+          selectedOptions,
+          overlapOverride,
+          adjustments,
+          result,
+          finalTotalNet,
+          finalTotalGross,
+          finalMarginPercentage
+      }
+    }
+    
+    try {
+      setLoading(true)
+      await axios.post(`${API_URL}/offers/${activeOfferId}/variants`, payload)
+      router.push(`/admin/offers/${activeOfferId}`) // Redirect back to offer
+    } catch (err: any) {
+      console.error(err)
+      setError(err.response?.data?.detail || 'Nie udało się dodać kalkulacji do oferty.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <Header 
         actions={
-          <>
+          <div className="flex items-center gap-3">
+            {activeOfferId && (
+              <button
+                onClick={() => router.push(`/admin/offers/${activeOfferId}`)}
+                className="text-gray-600 hover:text-gray-900 px-4 py-2 font-medium transition-colors"
+                disabled={loading}
+              >
+                Anuluj
+              </button>
+            )}
+
             <button
               onClick={() => {
                 if (!result) return
+                if (activeOfferId) {
+                  handleAddVariantToOffer()
+                  return
+                }
+
                 const editingOfferId = sessionStorage.getItem('editingOfferId')
                 const offerData = {
                   templateId,
@@ -355,7 +416,7 @@ export default function Calculator() {
                   router.push('/admin/offers/new')
                 }
               }}
-              disabled={!result}
+              disabled={!result || loading}
               className={`${typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'
@@ -364,9 +425,11 @@ export default function Calculator() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
-              {typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
-                ? 'Zaktualizuj ofertę'
-                : 'Stwórz ofertę'}
+              {activeOfferId 
+                ? `Dodaj do oferty #${activeOfferId}` 
+                : (typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                    ? 'Zaktualizuj ofertę'
+                    : 'Stwórz ofertę')}
             </button>
 
             <button
@@ -376,7 +439,7 @@ export default function Calculator() {
             >
               {loading ? 'Obliczanie...' : 'Przelicz'}
             </button>
-          </>
+          </div>
         }
       />
 

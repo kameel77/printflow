@@ -9,12 +9,12 @@ from app.core.security import get_current_user
 from app.models.models import User, OfferStatus
 from app.schemas.schemas import (
     OfferCreate, OfferUpdate, OfferResponse, OfferListResponse,
-    OfferStatus as OfferStatusSchema, OfferSendRequest
+    OfferStatus as OfferStatusSchema, OfferSendRequest, OfferVariantCreate
 )
 from app.services.email import send_offer_email
 from app.services.offer_service import (
     create_offer, get_offer_by_id, list_offers, update_offer,
-    mark_offer_sent, duplicate_offer,
+    mark_offer_sent, duplicate_offer, add_variant_to_offer
 )
 
 router = APIRouter()
@@ -108,6 +108,27 @@ async def api_update_offer(
         )
 
     return await update_offer(db, offer, data)
+
+
+@router.post("/{offer_id}/variants", response_model=OfferResponse, status_code=201)
+async def api_add_offer_variant(
+    offer_id: int,
+    data: OfferVariantCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Add a single new variant/calculation to an existing offer."""
+    offer = await get_offer_by_id(db, offer_id)
+    if not offer:
+        raise HTTPException(status_code=404, detail="Oferta nie znaleziona")
+
+    if offer.status != OfferStatus.DRAFT:
+        raise HTTPException(
+            status_code=400,
+            detail="Tylko szkice ofert mogą być edytowane (dodawanie wariantów)"
+        )
+
+    return await add_variant_to_offer(db, offer, data)
 
 
 @router.post("/{offer_id}/send", response_model=OfferResponse)

@@ -168,19 +168,16 @@ export default function OfferDetailPage() {
         }
     }
 
-    const handleEditInCalculator = () => {
-        if (!offer) return
-        // Pick the recommended variant or the first one
-        const variant = offer.variants.find((v) => v.is_recommended) || offer.variants[0]
-        if (!variant) return
+    const handleEditVariant = (variant: any) => {
+        if (!offer || !variant) return
 
         // Pull everything we can from calculation_snapshot
-        const snap = (variant as any).calculation_snapshot || {}
+        const snap = variant.calculation_snapshot || {}
 
         // Reconstruct adjustments from components tagged as ADJUSTMENT
         const adjustments = variant.components
-            .filter((c) => c.type === 'ADJUSTMENT')
-            .map((c) => ({
+            .filter((c: any) => c.type === 'ADJUSTMENT')
+            .map((c: any) => ({
                 id: String(Date.now() + Math.random()),
                 desc: c.name_snapshot,
                 type: c.total_price < 0 ? 'percentage' : 'amount',
@@ -188,7 +185,7 @@ export default function OfferDetailPage() {
             }))
 
         const editData = {
-            templateId: (variant as any).template_id || snap.template_id || '',
+            templateId: variant.template_id || snap.template_id || '',
             width: variant.width_cm ? String(Number(variant.width_cm)) : '',
             height: variant.height_cm ? String(Number(variant.height_cm)) : '',
             quantity: variant.quantity ? String(variant.quantity) : '1',
@@ -201,7 +198,7 @@ export default function OfferDetailPage() {
         sessionStorage.setItem('editOfferCalculation', JSON.stringify(editData))
         // Also carry the offer id so we can update it after re-calculation
         sessionStorage.setItem('editingOfferId', String(offer.id))
-        router.push('/')
+        router.push('/') // Note: the default calculator is at the root or /admin/calculator depending on the routing.
     }
 
     const publicLink = offer ? `${PUBLIC_BASE}/offer/${offer.token}` : ''
@@ -246,17 +243,6 @@ export default function OfferDetailPage() {
                 backHref="/admin/offers"
                 actions={
                     <>
-                        {offer.status === 'DRAFT' && (
-                            <button
-                                onClick={handleEditInCalculator}
-                                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edytuj w kalkulatorze
-                            </button>
-                        )}
                         {offer.status === 'DRAFT' && (
                             <button onClick={() => setIsSendModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,43 +404,75 @@ export default function OfferDetailPage() {
                     </div>
                 )}
 
-                {/* Variants */}
+                {/* Variants -> Pozycje */}
                 <div className="bg-white rounded-xl shadow-sm border p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Warianty ({offer.variants.length})</h3>
-                    <div className="space-y-4">
-                        {offer.variants
-                            .sort((a, b) => a.sort_order - b.sort_order)
-                            .map((v) => {
-                                const isAccepted = offer.accepted_variant_id === v.id
-                                return (
-                                    <div key={v.id} className={`rounded-xl border-2 p-5 ${isAccepted ? 'border-green-300 bg-green-50/30' : v.is_recommended ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'}`}>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <h4 className="font-semibold text-gray-900">{v.name}</h4>
-                                                {v.is_recommended && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Polecany</span>}
-                                                {isAccepted && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ Wybrany przez klienta</span>}
-                                            </div>
-                                            <div className="text-right">
-                                                {offer.client?.company_name || offer.client?.company_nip ? (
-                                                    <>
-                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
-                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
-                                                        <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Kalkulacje / Pozycje {offer.variants.length > 0 ? `(${offer.variants.length})` : ''}</h3>
+                        {offer.status === 'DRAFT' && (
+                            <button
+                                onClick={() => router.push(`/?offerId=${offer.id}`)}
+                                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                Dodaj nową kalkulację
+                            </button>
+                        )}
+                    </div>
 
-                                        <div className="flex gap-4 text-sm text-gray-600 mb-3">
-                                            {v.width_cm && v.height_cm && <span>Wymiary: {Number(v.width_cm)}×{Number(v.height_cm)} cm</span>}
-                                            {v.quantity && <span>Ilość: {v.quantity} szt.</span>}
-                                        </div>
+                    {offer.variants.length === 0 ? (
+                        <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                            Brak przeliczonych pozycji w ofercie. Kliknij "Dodaj nową kalkulację", aby rozpocząć.
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-4">
+                                {offer.variants
+                                    .sort((a, b) => a.sort_order - b.sort_order)
+                                    .map((v, idx) => {
+                                        const isAccepted = offer.accepted_variant_id === v.id
+                                        return (
+                                            <div key={v.id} className={`rounded-xl border-2 p-5 ${isAccepted ? 'border-green-300 bg-green-50/30' : v.is_recommended ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'}`}>
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>
+                                                            <h4 className="font-semibold text-gray-900">{v.name}</h4>
+                                                            {v.is_recommended && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Polecany</span>}
+                                                            {isAccepted && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">✓ Wybrany przez klienta</span>}
+                                                        </div>
+                                                        <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                                                            {v.width_cm && v.height_cm && <span>Wymiary: {Number(v.width_cm)}×{Number(v.height_cm)} cm</span>}
+                                                            {v.quantity && <span>Ilość: {v.quantity} szt.</span>}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className="text-right">
+                                                            {offer.client?.company_name || offer.client?.company_nip ? (
+                                                                <>
+                                                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_net)} <span className="text-sm font-normal text-gray-500">netto</span></p>
+                                                                    <p className="text-sm text-gray-500">{formatCurrency(v.total_price_gross)} brutto</p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(v.total_price_gross)} <span className="text-sm font-normal text-gray-500">brutto</span></p>
+                                                                    <p className="text-sm text-gray-500">{formatCurrency(v.total_price_net)} netto</p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {offer.status === 'DRAFT' && (
+                                                            <button
+                                                                onClick={() => handleEditVariant(v)}
+                                                                className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+                                                            >
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                Edytuj i zastąp w ofercie
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                        <div className="rounded-lg border overflow-hidden">
+                                        <div className="mt-3 rounded-lg border overflow-hidden">
                                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                                 <thead className="bg-gray-50">
                                                     <tr>
@@ -489,7 +507,23 @@ export default function OfferDetailPage() {
                                     </div>
                                 )
                             })}
-                    </div>
+                        </div>
+                        
+                        {offer.variants.length > 1 && (
+                            <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+                                <h4 className="font-medium text-gray-700">Podsumowanie całej oferty (Suma pozycji):</h4>
+                                <div className="text-right">
+                                    <p className="text-xl font-bold text-gray-900">
+                                        {formatCurrency(offer.variants.reduce((sum, v) => sum + Number(v.total_price_net), 0))} <span className="text-sm font-normal text-gray-500">netto</span>
+                                    </p>
+                                    <p className="text-sm font-medium text-gray-600">
+                                        {formatCurrency(offer.variants.reduce((sum, v) => sum + Number(v.total_price_gross), 0))} <span className="text-xs font-normal text-gray-500">brutto</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        </>
+                    )}
                 </div>
 
                 {/* Tracking Events */}
