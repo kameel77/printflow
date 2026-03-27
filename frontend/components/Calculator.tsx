@@ -78,6 +78,7 @@ export default function Calculator() {
   const [productionDetailsOpen, setProductionDetailsOpen] = useState(false)
   const [techDetailsOpen, setTechDetailsOpen] = useState(true)
   const [activeOfferId, setActiveOfferId] = useState<string | null>(null)
+  const [isEditingOffer, setIsEditingOffer] = useState(false)
 
   // State
   const [loading, setLoading] = useState(false)
@@ -94,6 +95,9 @@ export default function Calculator() {
     // Check if we are adding a variant to an existing offer
     const search = new URLSearchParams(window.location.search)
     setActiveOfferId(search.get('offerId'))
+    
+    // Check if we are editing an offer
+    setIsEditingOffer(Boolean(sessionStorage.getItem('editingOfferId')))
   }, [])
 
   // Restore state when editing a draft offer (triggered after templates load)
@@ -448,7 +452,7 @@ export default function Calculator() {
                 }
               }}
               disabled={!result || loading}
-              className={`${typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+              className={`${isEditingOffer
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'
                 } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
@@ -458,7 +462,7 @@ export default function Calculator() {
               </svg>
               {activeOfferId 
                 ? `Dodaj do oferty #${activeOfferId}` 
-                : (typeof window !== 'undefined' && sessionStorage.getItem('editingOfferId')
+                : (isEditingOffer
                     ? 'Zaktualizuj ofertę'
                     : 'Stwórz ofertę')}
             </button>
