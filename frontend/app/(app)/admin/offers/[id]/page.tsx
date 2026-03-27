@@ -111,6 +111,7 @@ export default function OfferDetailPage() {
     const [adjustmentType, setAdjustmentType] = useState<'amount' | 'percentage'>('amount')
     const [adjustmentValue, setAdjustmentValue] = useState('')
     const [savingAdjustment, setSavingAdjustment] = useState(false)
+    const [editingAdjustmentId, setEditingAdjustmentId] = useState<number | null>(null)
 
     const offerId = params?.id as string
 
@@ -295,11 +296,19 @@ export default function OfferDetailPage() {
                 calculation_snapshot: { is_global_adjustment: true } 
             }
 
+            if (editingAdjustmentId) {
+                // First delete the old adjustment
+                await axios.delete(`${API_URL}/offers/${offerId}/variants/${editingAdjustmentId}`, {
+                    headers: getAuthHeaders()
+                })
+            }
+
             await axios.post(`${API_URL}/offers/${offerId}/variants`, payload, {
                 headers: getAuthHeaders()
             })
             
             setIsAddingAdjustment(false)
+            setEditingAdjustmentId(null)
             setAdjustmentValue('')
             setAdjustmentName('Korekta sumaryczna')
             fetchOffer()
@@ -309,6 +318,23 @@ export default function OfferDetailPage() {
         } finally {
             setSavingAdjustment(false)
         }
+    }
+
+    const cancelAdjustment = () => {
+        setIsAddingAdjustment(false)
+        setEditingAdjustmentId(null)
+        setAdjustmentValue('')
+        setAdjustmentName('Korekta sumaryczna')
+        setAdjustmentType('amount')
+    }
+
+    const handleEditAdjustment = (variant: any) => {
+        setEditingAdjustmentId(variant.id)
+        setAdjustmentName(variant.name)
+        setAdjustmentType('amount') // Re-edit always defaults to amount for simplicity, using the current total
+        setAdjustmentValue(String(variant.total_price_net))
+        setIsAddingAdjustment(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     const handleEditVariant = (variant: any) => {
@@ -368,8 +394,23 @@ export default function OfferDetailPage() {
     const totalGross = variantsWithPrice.reduce((sum, v) => sum + Number(v.total_price_gross), 0);
     const totalCogs = variantsWithPrice.reduce((sum, v) => {
         const snap = (v as any).calculation_snapshot || {};
-        const cogs = snap.result?.total_cost_cogs ?? (snap.is_global_adjustment ? 0 : 0);
-        return sum + Number(cogs);
+        if (snap.is_global_adjustment) return sum;
+        
+        let cogs = 0;
+        if (snap.result?.total_cost_cogs !== undefined) {
+            cogs = Number(snap.result.total_cost_cogs);
+        } else if (snap.total_cost_cogs !== undefined) {
+            cogs = Number(snap.total_cost_cogs);
+        } else {
+            // Backward compatibility for old variants where COGS wasn't saved directly
+            // Calculate backwards from margin_percentage and total_price_net
+            // Margin = (Price - Cost) / Cost * 100 => Cost = Price / (1 + Margin/100)
+            const marginPct = snap.finalMarginPercentage ?? snap.result?.margin_percentage ?? 0;
+            const price = Number(v.total_price_net);
+            cogs = price / (1 + (Number(marginPct) / 100));
+        }
+        
+        return sum + cogs;
     }, 0);
     const marginVal = totalNet - totalCogs;
     const marginPct = totalCogs > 0 ? (marginVal / totalCogs) * 100 : (totalNet > 0 ? 100 : 0);
@@ -650,7 +691,7 @@ export default function OfferDetailPage() {
 
                     {isAddingAdjustment && (
                         <div className="mb-6 p-4 border border-purple-100 bg-purple-50/50 rounded-xl">
-                            <h4 className="text-sm font-medium text-purple-900 mb-3">Dodaj korektę do zamówienia</h4>
+                            <h4 className="text-sm font-medium text-purple-900 mb-3">{editingAdjustmentId ? 'Edytuj korektę' : 'Dodaj korektę do zamówienia'}</h4>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                                 <div className="md:col-span-2">
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Nazwa (np. Rabat stałego klienta)</label>
@@ -669,7 +710,7 @@ export default function OfferDetailPage() {
                                 </div>
                             </div>
                             <div className="flex gap-2 mt-4 justify-end">
-                                <button onClick={() => setIsAddingAdjustment(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Anuluj</button>
+                                <button onClick={cancelAdjustment} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Anuluj</button>
                                 <button onClick={handleAddGlobalAdjustment} disabled={savingAdjustment || !adjustmentValue} className="px-4 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
                                     {savingAdjustment ? 'Zapisywanie...' : 'Zapisz korektę'}
                                 </button>
@@ -716,14 +757,24 @@ export default function OfferDetailPage() {
                                                                             {formatCurrency(Number(v.total_price_gross))} <span className="text-xs font-normal text-gray-500">brutto</span>
                                                                         </p>
                                                                     </div>
-                                                                    {offer.status === 'DRAFT' && !(v as any).calculation_snapshot?.is_global_adjustment && (
-                                                                        <button
-                                                                            onClick={() => handleEditVariant(v)}
-                                                                            className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                                                                        >
-                                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                                                            Edytuj i zastąp w ofercie
-                                                                        </button>
+                                                                    {offer.status === 'DRAFT' && (
+                                                                        (v as any).calculation_snapshot?.is_global_adjustment ? (
+                                                                            <button
+                                                                                onClick={() => handleEditAdjustment(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Zmień kwotę
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => handleEditVariant(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Edytuj i zastąp w ofercie
+                                                                            </button>
+                                                                        )
                                                                     )}
                                                                 </div>
                                                             </>
@@ -738,14 +789,24 @@ export default function OfferDetailPage() {
                                                                             {formatCurrency(Number(v.total_price_net))} <span className="text-xs font-normal text-gray-500">netto</span>
                                                                         </p>
                                                                     </div>
-                                                                    {offer.status === 'DRAFT' && !(v as any).calculation_snapshot?.is_global_adjustment && (
-                                                                        <button
-                                                                            onClick={() => handleEditVariant(v)}
-                                                                            className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                                                                        >
-                                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                                                            Edytuj i zastąp w ofercie
-                                                                        </button>
+                                                                    {offer.status === 'DRAFT' && (
+                                                                        (v as any).calculation_snapshot?.is_global_adjustment ? (
+                                                                            <button
+                                                                                onClick={() => handleEditAdjustment(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Zmień kwotę
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => handleEditVariant(v)}
+                                                                                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                                                Edytuj i zastąp w ofercie
+                                                                            </button>
+                                                                        )
                                                                     )}
                                                                 </div>
                                                             </>
@@ -762,10 +823,9 @@ export default function OfferDetailPage() {
                                                         <th className="font-semibold text-gray-500 py-3 1/6 text-right w-32 border-b border-gray-100 uppercase tracking-widest text-[10px]">
                                                             Kwota netto
                                                         </th>
-                                                        <th className="font-semibold text-gray-500 py-3 1/6 text-center w-32 border-b border-gray-100 text-[10px] pr-2">
-                                                            <span className="flex items-center justify-center gap-1 text-gray-500 uppercase tracking-widest" title="Czy pozycja jest widoczna dla klienta na kalkulacji">
-                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                                <span>Widoczne</span>
+                                                        <th className="font-semibold text-gray-500 py-3 1/6 text-center w-16 border-b border-gray-100 pr-2">
+                                                            <span className="flex items-center justify-center gap-1 text-gray-500" title="Czy pozycja jest widoczna dla klienta na kalkulacji">
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                             </span>
                                                         </th>
                                                     </tr>
