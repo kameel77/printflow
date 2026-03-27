@@ -105,6 +105,13 @@ export default function OfferDetailPage() {
     const [clientResults, setClientResults] = useState<any[]>([])
     const [savingNewClient, setSavingNewClient] = useState(false)
 
+    // Global Adjustment
+    const [isAddingAdjustment, setIsAddingAdjustment] = useState(false)
+    const [adjustmentName, setAdjustmentName] = useState('Korekta sumaryczna')
+    const [adjustmentType, setAdjustmentType] = useState<'amount' | 'percentage'>('amount')
+    const [adjustmentValue, setAdjustmentValue] = useState('')
+    const [savingAdjustment, setSavingAdjustment] = useState(false)
+
     const offerId = params?.id as string
 
     const getAuthHeaders = useCallback(() => {
@@ -248,6 +255,59 @@ export default function OfferDetailPage() {
             alert(err.response?.data?.detail || 'Błąd zapisu szczegółów oferty')
         } finally {
             setSavingOfferDetails(false)
+        }
+    }
+
+    const handleAddGlobalAdjustment = async () => {
+        if (!offer || !adjustmentValue) return
+        
+        const val = parseFloat(adjustmentValue.replace(',', '.'))
+        if (isNaN(val) || val === 0) return
+
+        setSavingAdjustment(true)
+        try {
+            // Calculate current total net of existing standard variants to base % on
+            const currentTotalNet = offer.variants.reduce((sum, v) => sum + Number(v.total_price_net), 0)
+            const amountNet = adjustmentType === 'amount' ? val : currentTotalNet * (val / 100)
+            const amountGross = amountNet * 1.23 // 23% VAT assumed
+
+            const payload = {
+                name: adjustmentName || 'Korekta',
+                is_recommended: false,
+                width_cm: null,
+                height_cm: null,
+                quantity: 1,
+                total_price_net: amountNet,
+                total_price_gross: amountGross,
+                sort_order: 999, // push to bottom
+                components: [
+                    {
+                        name_snapshot: adjustmentName || 'Korekta',
+                        type: 'ADJUSTMENT',
+                        quantity: 1,
+                        unit: 'szt.',
+                        unit_price: amountNet,
+                        total_price: amountNet,
+                        visible_to_client: true
+                    }
+                ],
+                // pseudo-snapshot empty to avoid error
+                calculation_snapshot: { is_global_adjustment: true } 
+            }
+
+            await axios.post(`${API_URL}/offers/${offerId}/variants`, payload, {
+                headers: getAuthHeaders()
+            })
+            
+            setIsAddingAdjustment(false)
+            setAdjustmentValue('')
+            setAdjustmentName('Korekta sumaryczna')
+            fetchOffer()
+        } catch (err: any) {
+            console.error(err)
+            alert(err.response?.data?.detail || 'Błąd zapisu korekty')
+        } finally {
+            setSavingAdjustment(false)
         }
     }
 
@@ -558,15 +618,53 @@ export default function OfferDetailPage() {
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">Kalkulacje / Pozycje {offer.variants.length > 0 ? `(${offer.variants.length})` : ''}</h3>
                         {offer.status === 'DRAFT' && (
-                            <button
-                                onClick={() => router.push(`/?offerId=${offer.id}`)}
-                                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                Dodaj nową kalkulację
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setIsAddingAdjustment(true)}
+                                    className="px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors inline-flex items-center gap-1.5"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                    Dodaj rabat / koszt
+                                </button>
+                                <button
+                                    onClick={() => router.push(`/?offerId=${offer.id}`)}
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    Dodaj nową kalkulację
+                                </button>
+                            </div>
                         )}
                     </div>
+
+                    {isAddingAdjustment && (
+                        <div className="mb-6 p-4 border border-purple-100 bg-purple-50/50 rounded-xl">
+                            <h4 className="text-sm font-medium text-purple-900 mb-3">Dodaj korektę do zamówienia</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Nazwa (np. Rabat stałego klienta)</label>
+                                    <input type="text" value={adjustmentName} onChange={e => setAdjustmentName(e.target.value)} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Nazwa pozycji"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Typ</label>
+                                    <select value={adjustmentType} onChange={e => setAdjustmentType(e.target.value as 'amount' | 'percentage')} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                        <option value="amount">Kwota (PLN)</option>
+                                        <option value="percentage">Procent (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Wartość (+/-)</label>
+                                    <input type="number" step="0.01" value={adjustmentValue} onChange={e => setAdjustmentValue(e.target.value)} className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="-100 lub -10"/>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-4 justify-end">
+                                <button onClick={() => setIsAddingAdjustment(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Anuluj</button>
+                                <button onClick={handleAddGlobalAdjustment} disabled={savingAdjustment || !adjustmentValue} className="px-4 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors">
+                                    {savingAdjustment ? 'Zapisywanie...' : 'Zapisz korektę'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {offer.variants.length === 0 ? (
                         <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
@@ -658,19 +756,42 @@ export default function OfferDetailPage() {
                             })}
                         </div>
                         
-                        {offer.variants.length > 1 && (
-                            <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-                                <h4 className="font-medium text-gray-700">Podsumowanie całej oferty (Suma pozycji):</h4>
-                                <div className="text-right">
-                                    <p className="text-xl font-bold text-gray-900">
-                                        {formatCurrency(offer.variants.reduce((sum, v) => sum + Number(v.total_price_net), 0))} <span className="text-sm font-normal text-gray-500">netto</span>
-                                    </p>
-                                    <p className="text-sm font-medium text-gray-600">
-                                        {formatCurrency(offer.variants.reduce((sum, v) => sum + Number(v.total_price_gross), 0))} <span className="text-xs font-normal text-gray-500">brutto</span>
-                                    </p>
+                        {offer.variants.length > 0 && (() => {
+                            const totalNet = offer.variants.reduce((sum, v) => sum + Number(v.total_price_net), 0);
+                            const totalGross = offer.variants.reduce((sum, v) => sum + Number(v.total_price_gross), 0);
+                            const totalCogs = offer.variants.reduce((sum, v) => {
+                                const cogs = (v as any).calculation_snapshot?.result?.total_cost_cogs || 0;
+                                return sum + Number(cogs);
+                            }, 0);
+                            const marginVal = totalNet - totalCogs;
+                            const marginPct = totalNet > 0 ? (marginVal / totalNet) * 100 : 0;
+
+                            return (
+                                <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                        <h4 className="font-medium text-gray-700 text-lg">Podsumowanie całej oferty:</h4>
+                                        <div className="mt-1 flex items-center gap-3">
+                                            <div className="px-3 py-1 bg-white border border-green-200 rounded-lg shadow-sm">
+                                                <span className="text-xs text-green-700 font-medium tracking-wide uppercase">Zysk (Marża)</span>
+                                                <p className="text-sm font-bold text-green-700">
+                                                    {formatCurrency(marginVal)} ({marginPct.toFixed(1)}%)
+                                                </p>
+                                            </div>
+                                            <p className="text-xs text-gray-500">Widoczne tylko dla administratora</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-gray-900 leading-tight">
+                                            {formatCurrency(totalNet)} <span className="text-sm font-normal text-gray-500">netto</span>
+                                        </p>
+                                        <p className="text-sm font-medium text-gray-600 mt-1">
+                                            {formatCurrency(totalGross)} <span className="text-xs font-normal text-gray-500">brutto</span>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
                         </>
                     )}
                 </div>
