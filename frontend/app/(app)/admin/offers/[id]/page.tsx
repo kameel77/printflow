@@ -174,25 +174,15 @@ export default function OfferDetailPage() {
         // Pull everything we can from calculation_snapshot
         const snap = variant.calculation_snapshot || {}
 
-        // Reconstruct adjustments from components tagged as ADJUSTMENT
-        const adjustments = variant.components
-            .filter((c: any) => c.type === 'ADJUSTMENT')
-            .map((c: any) => ({
-                id: String(Date.now() + Math.random()),
-                desc: c.name_snapshot,
-                type: c.total_price < 0 ? 'percentage' : 'amount',
-                value: String(Math.abs(c.total_price)),
-            }))
-
         const editData = {
-            templateId: variant.template_id || snap.template_id || '',
-            width: variant.width_cm ? String(Number(variant.width_cm)) : '',
-            height: variant.height_cm ? String(Number(variant.height_cm)) : '',
-            quantity: variant.quantity ? String(variant.quantity) : '1',
+            templateId: variant.template_id || snap.templateId || '',
+            width: variant.width_cm ? String(Number(variant.width_cm)) : snap.width || '',
+            height: variant.height_cm ? String(Number(variant.height_cm)) : snap.height || '',
+            quantity: variant.quantity ? String(variant.quantity) : snap.quantity || '1',
             customerType: snap.customerType || 'B2C',
-            selectedOptions: snap.selected_options || [],
-            overlapOverride: snap.overlap_used_cm ? String(snap.overlap_used_cm) : '',
-            adjustments,
+            selectedOptions: snap.selectedOptions || [],
+            overlapOverride: snap.overlapOverride || '',
+            adjustments: snap.adjustments || [],
         }
 
         sessionStorage.setItem('editOfferCalculation', JSON.stringify(editData))

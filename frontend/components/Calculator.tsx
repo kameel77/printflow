@@ -330,6 +330,33 @@ export default function Calculator() {
   const handleAddVariantToOffer = async () => {
     if (!result || !activeOfferId) return
     
+    // Build components array matching the new offer flow
+    const components: any[] = result.tech_view.map((tv: any) => ({
+        name_snapshot: tv.name,
+        type: tv.type,
+        quantity: tv.qty,
+        unit: tv.unit,
+        unit_price: tv.price_net / (tv.qty || 1),
+        total_price: tv.price_net,
+        visible_to_client: true,
+    }))
+
+    // Add adjustments as components
+    adjustments.forEach((adj) => {
+        const val = parseFloat(adj.value.replace(',', '.'))
+        if (isNaN(val) || val === 0) return
+        const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
+        components.push({
+            name_snapshot: adj.desc || 'Korekta wyceny',
+            type: 'ADJUSTMENT',
+            quantity: null,
+            unit: null,
+            unit_price: null,
+            total_price: amountNet,
+            visible_to_client: true,
+        })
+    })
+
     // Build the variant payload matching the expected API model
     const payload = {
       template_id: parseInt(templateId),
@@ -340,6 +367,7 @@ export default function Calculator() {
       quantity: parseInt(quantity),
       total_price_net: finalTotalNet,
       total_price_gross: finalTotalGross,
+      components,
       calculation_snapshot: {
           width,
           height,
