@@ -441,12 +441,15 @@ export default function Calculator() {
                   finalTotalNet,
                   finalTotalGross,
                   finalMarginPercentage,
-                  editingOfferId: editingOfferId || null,
+                  editingOfferId: sessionStorage.getItem('editingOfferId'),
+                  editingVariantId: sessionStorage.getItem('editingVariantId')
                 }
                 sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
-                if (editingOfferId) {
+                
+                if (offerData.editingOfferId) {
                   sessionStorage.removeItem('editingOfferId')
-                  router.push(`/admin/offers/${editingOfferId}/edit`)
+                  sessionStorage.removeItem('editingVariantId')
+                  router.push(`/admin/offers/${offerData.editingOfferId}/edit`)
                 } else {
                   router.push('/admin/offers/new')
                 }

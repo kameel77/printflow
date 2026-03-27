@@ -188,6 +188,7 @@ export default function OfferDetailPage() {
         sessionStorage.setItem('editOfferCalculation', JSON.stringify(editData))
         // Also carry the offer id so we can update it after re-calculation
         sessionStorage.setItem('editingOfferId', String(offer.id))
+        sessionStorage.setItem('editingVariantId', String(variant.id))
         router.push('/') // Note: the default calculator is at the root or /admin/calculator depending on the routing.
     }
 
