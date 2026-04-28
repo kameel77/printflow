@@ -1711,7 +1711,7 @@ function ProcessModal({
                                     </div>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Narzut na robociznę (%)</label>
                                     <input type="number" value={markupPercentage} onChange={(e) => setMarkupPercentage(e.target.value)} step="1" min="0" className={inputClass} placeholder="np. 30" />
@@ -1719,6 +1719,12 @@ function ProcessModal({
                                 <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
                                     <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
                                 </LabelWithTooltip>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Jednostka</label>
+                                    <div className={`${inputClass} bg-gray-100 text-gray-600 cursor-not-allowed`}>
+                                        {METHOD_UNIT_LABELS[unit] || unit}
+                                    </div>
+                                </div>
                             </div>
                         </>
                     ) : (
@@ -1736,6 +1742,7 @@ function ProcessModal({
                         </div>
                     )}
 
+                    {!isTimeMethod && (
                     <div className="grid grid-cols-3 gap-4">
                         <LabelWithTooltip label="Margines W (cm)" tooltipText={tooltipMarginW || undefined}>
                             <input type="number" value={marginW} onChange={(e) => setMarginW(e.target.value)} step="0.1" className={inputClass} />
@@ -1750,6 +1757,7 @@ function ProcessModal({
                             </div>
                         </div>
                     </div>
+                    )}
 
                     <div className="flex items-center gap-2">
                         <input type="checkbox" id="procIsActive" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
