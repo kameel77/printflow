@@ -5,10 +5,9 @@
 # CRITICAL: DNS collision prevention
 # Both staging and production have a 'backend' service on the shared 'coolify'
 # Docker network. Docker DNS can resolve 'backend' to EITHER environment's
-# container randomly. To prevent this, the frontend uses the 'internal' network
-# (which is isolated per-deployment) for backend communication.
-# The backend is removed from the 'coolify' network since Traefik routes
-# external traffic through the frontend only.
+# container randomly. Frontend uses BACKEND_URL env var to connect to backend
+# through the 'internal' network (isolated per-deployment) where 'backend'
+# DNS resolves unambiguously to this deployment's backend only.
 version: '3.8'
 
 services:
@@ -66,9 +65,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      # Backend is ONLY on 'internal' network to prevent DNS collisions
-      # on the shared 'coolify' network between staging/production.
-      # Frontend proxies API requests internally via 'internal' network.
+      - coolify
       - internal
     command: >
       sh -c "
