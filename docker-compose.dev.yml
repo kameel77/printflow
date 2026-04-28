@@ -27,6 +27,7 @@ services:
       start_period: 120s
     networks:
       - coolify
+      - internal
     command: >
       sh -c "
         echo 'Wait 3s for DB/DNS...' && sleep 3 &&
@@ -63,7 +64,10 @@ services:
       test: [ "NONE" ]
     networks:
       - coolify
+      - internal
 
 networks:
   coolify:
     external: true
+  internal:
+    driver: bridge
