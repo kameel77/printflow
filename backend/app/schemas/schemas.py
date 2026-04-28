@@ -288,6 +288,9 @@ class LaborRateSettingsUpdate(BaseModel):
     easy_rate: Optional[Decimal] = None
     medium_rate: Optional[Decimal] = None
     hard_rate: Optional[Decimal] = None
+    easy_markup: Optional[Decimal] = None
+    medium_markup: Optional[Decimal] = None
+    hard_markup: Optional[Decimal] = None
 
 
 class LaborRateSettingsResponse(BaseModel):
@@ -295,6 +298,9 @@ class LaborRateSettingsResponse(BaseModel):
     easy_rate: Decimal = Decimal("0.00")
     medium_rate: Decimal = Decimal("0.00")
     hard_rate: Decimal = Decimal("0.00")
+    easy_markup: Decimal = Decimal("0.00")
+    medium_markup: Decimal = Decimal("0.00")
+    hard_markup: Decimal = Decimal("0.00")
     updated_at: Optional[datetime] = None
 
     class Config:

@@ -140,6 +140,9 @@ class LaborRateSettings(Base):
     easy_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
     medium_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
     hard_rate = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
+    easy_markup = Column(Numeric(10, 2), nullable=False, server_default="0.00")
+    medium_markup = Column(Numeric(10, 2), nullable=False, server_default="0.00")
+    hard_markup = Column(Numeric(10, 2), nullable=False, server_default="0.00")
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 

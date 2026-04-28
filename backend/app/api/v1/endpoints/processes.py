@@ -28,17 +28,26 @@ async def _compute_time_prices(db: AsyncSession, process: Process) -> None:
         "MEDIUM": Decimal(str(rates.medium_rate)),
         "HARD": Decimal(str(rates.hard_rate)),
     }
+    markup_map = {
+        "EASY": Decimal(str(rates.easy_markup or 0)),
+        "MEDIUM": Decimal(str(rates.medium_markup or 0)),
+        "HARD": Decimal(str(rates.hard_markup or 0)),
+    }
 
     total_cost = Decimal("0")
+    total_price = Decimal("0")
     for entry in process.labor_entries:
         minutes = Decimal(str(entry.minutes))
         difficulty = entry.difficulty.value if hasattr(entry.difficulty, "value") else str(entry.difficulty)
         hourly_rate = rate_map.get(difficulty, Decimal("0"))
-        total_cost += minutes * hourly_rate / Decimal("60")
+        entry_cost = minutes * hourly_rate / Decimal("60")
+        entry_markup = markup_map.get(difficulty, Decimal("0"))
+        entry_price = entry_cost * (Decimal("1") + entry_markup / Decimal("100"))
+        total_cost += entry_cost
+        total_price += entry_price
 
-    markup = Decimal(str(process.markup_percentage or 0))
     process.internal_cost = total_cost
-    process.unit_price = total_cost * (Decimal("1") + markup / Decimal("100"))
+    process.unit_price = total_price
 
 
 @router.get("", response_model=List[ProcessResponse])

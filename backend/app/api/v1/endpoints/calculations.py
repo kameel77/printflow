@@ -114,6 +114,9 @@ async def build_db_context(db: AsyncSession) -> dict:
         "easy_rate": float(settings.easy_rate),
         "medium_rate": float(settings.medium_rate),
         "hard_rate": float(settings.hard_rate),
+        "easy_markup": float(settings.easy_markup or 0),
+        "medium_markup": float(settings.medium_markup or 0),
+        "hard_markup": float(settings.hard_markup or 0),
     } if settings else {}
 
     return {
