@@ -860,8 +860,12 @@ export default function AdminPage() {
                                     settings={laborRates}
                                     onSave={async (data) => {
                                         await axios.put(`${API_URL}/settings/labor-rates`, data)
-                                        const res = await axios.get(`${API_URL}/settings/labor-rates`)
-                                        setLaborRates(res.data)
+                                        const [ratesRes, procRes] = await Promise.all([
+                                            axios.get(`${API_URL}/settings/labor-rates`),
+                                            axios.get(`${API_URL}/processes`),
+                                        ])
+                                        setLaborRates(ratesRes.data)
+                                        setProcesses(procRes.data)
                                     }}
                                 />
                             </div>
