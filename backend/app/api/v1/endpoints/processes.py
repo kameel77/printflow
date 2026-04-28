@@ -1,4 +1,5 @@
 # Processes endpoint
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -6,10 +7,38 @@ from sqlalchemy.orm import selectinload
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import Process, ProcessLaborEntry
+from app.models.models import Process, ProcessLaborEntry, LaborRateSettings
 from app.schemas.schemas import ProcessCreate, ProcessResponse, ProcessUpdate
 
 router = APIRouter()
+
+
+async def _compute_time_prices(db: AsyncSession, process: Process) -> None:
+    """For TIME processes, compute unit_price and internal_cost from labor entries + rates."""
+    if process.method.value != "TIME" or not process.labor_entries:
+        return
+
+    result = await db.execute(select(LaborRateSettings).limit(1))
+    rates = result.scalar_one_or_none()
+    if not rates:
+        return
+
+    rate_map = {
+        "EASY": Decimal(str(rates.easy_rate)),
+        "MEDIUM": Decimal(str(rates.medium_rate)),
+        "HARD": Decimal(str(rates.hard_rate)),
+    }
+
+    total_cost = Decimal("0")
+    for entry in process.labor_entries:
+        minutes = Decimal(str(entry.minutes))
+        difficulty = entry.difficulty.value if hasattr(entry.difficulty, "value") else str(entry.difficulty)
+        hourly_rate = rate_map.get(difficulty, Decimal("0"))
+        total_cost += minutes * hourly_rate / Decimal("60")
+
+    markup = Decimal(str(process.markup_percentage or 0))
+    process.internal_cost = total_cost
+    process.unit_price = total_cost * (Decimal("1") + markup / Decimal("100"))
 
 
 @router.get("", response_model=List[ProcessResponse])
@@ -42,6 +71,10 @@ async def create_process(
         )
 
     db.add(db_process)
+    await db.flush()
+    await db.refresh(db_process, ["labor_entries"])
+
+    await _compute_time_prices(db, db_process)
     await db.flush()
     await db.refresh(db_process, ["labor_entries"])
     return db_process
@@ -95,6 +128,10 @@ async def update_process(
                 ProcessLaborEntry(minutes=entry_data["minutes"], difficulty=entry_data["difficulty"], sort_order=i)
             )
 
+    await db.flush()
+    await db.refresh(process, ["labor_entries"])
+
+    await _compute_time_prices(db, process)
     await db.flush()
     await db.refresh(process, ["labor_entries"])
     return process
