@@ -456,8 +456,14 @@ class PrintFlowEngine:
                         'MEDIUM': self._q(rates.get('medium_rate', 0)) / Decimal("60"),
                         'HARD': self._q(rates.get('hard_rate', 0)) / Decimal("60"),
                     }
+                    markup_map = {
+                        'EASY': self._q(rates.get('easy_markup', 0)),
+                        'MEDIUM': self._q(rates.get('medium_markup', 0)),
+                        'HARD': self._q(rates.get('hard_markup', 0)),
+                    }
                     difficulty_labels = {'EASY': 'Łatwa', 'MEDIUM': 'Średnia', 'HARD': 'Trudna'}
                     proc_labor_cost = Decimal("0")
+                    proc_labor_price = Decimal("0")
                     for le in proc_labor_entries:
                         minutes_val = self._q(le.get('minutes', 0))
                         difficulty = le.get('difficulty', '')
@@ -465,20 +471,22 @@ class PrintFlowEngine:
                             continue
                         rate_per_min = rate_map.get(difficulty, Decimal("0"))
                         entry_cost = minutes_val * rate_per_min
+                        entry_markup = markup_map.get(difficulty, Decimal("0"))
+                        entry_price = entry_cost * (Decimal("1") + entry_markup / Decimal("100"))
                         proc_labor_cost += entry_cost
+                        proc_labor_price += entry_price
                         label = difficulty_labels.get(difficulty, difficulty)
-                        self.log(f"  Robocizna procesu ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN")
+                        self.log(f"  Robocizna procesu ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN (narzut {entry_markup}% → {entry_price:.2f} PLN)")
 
                     setup = self._q(proc.get('setup_fee', 0))
-                    markup = self._q(proc.get('markup_percentage', 0))
 
                     cost = proc_labor_cost * req.quantity + setup
-                    price = proc_labor_cost * (1 + markup / Decimal("100")) * req.quantity + setup
+                    price = proc_labor_price * req.quantity + setup
 
                     total_cost += cost
                     total_price += price
 
-                    self.log(f"Proces TIME {proc['name']}: koszt robocizny/szt={proc_labor_cost:.2f} × {req.quantity}szt + setup={setup:.2f} | Koszt: {cost:.2f} | Markup: {markup}% | Cena: {price:.2f}")
+                    self.log(f"Proces TIME {proc['name']}: koszt robocizny/szt={proc_labor_cost:.2f}, cena/szt={proc_labor_price:.2f} × {req.quantity}szt + setup={setup:.2f} | Koszt: {cost:.2f} | Cena: {price:.2f}")
 
                     tech_view.append(ComponentResult(
                         name=proc['name'],
@@ -486,7 +494,7 @@ class PrintFlowEngine:
                         qty=float(req.quantity),
                         unit="szt",
                         price_net=self._money(price),
-                        details=f"Metoda: TIME, Robocizna/szt: {self._money(proc_labor_cost)} PLN, Narzut: {markup}%, Rotacja: {rot_text}",
+                        details=f"Metoda: TIME, Robocizna/szt: {self._money(proc_labor_cost)} PLN, Cena/szt: {self._money(proc_labor_price)} PLN, Rotacja: {rot_text}",
                         is_rotated=rotated_flag
                     ))
                 else:

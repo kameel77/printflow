@@ -110,6 +110,9 @@ interface LaborRateSettings {
     easy_rate: number
     medium_rate: number
     hard_rate: number
+    easy_markup: number
+    medium_markup: number
+    hard_markup: number
 }
 
 interface UserItem {
@@ -811,9 +814,9 @@ export default function AdminPage() {
                                                                 disabled={u.id === user?.id}
                                                                 className="px-2 py-1 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                                                             >
-                                                                <option value="admin">Admin</option>
-                                                                <option value="sales">Sales</option>
-                                                                <option value="production">Production</option>
+                                                                <option value="ADMIN">Admin</option>
+                                                                <option value="SALES">Sales</option>
+                                                                <option value="PRODUCTION">Production</option>
                                                             </select>
                                                         </td>
                                                         <td className="px-6 py-4">
@@ -1598,7 +1601,7 @@ function ProcessModal({
             name,
             method,
             unit_price: isTimeMethod ? 0 : parseFloat(unitPrice),
-            setup_fee: parseFloat(setupFee),
+            setup_fee: isTimeMethod ? 0 : parseFloat(setupFee),
             internal_cost: isTimeMethod ? 0 : (internalCost ? parseFloat(internalCost) : null),
             markup_percentage: isTimeMethod ? parseFloat(markupPercentage) : 0,
             margin_w_cm: parseFloat(marginW),
@@ -1711,21 +1714,7 @@ function ProcessModal({
                                     </div>
                                 )}
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Narzut na robociznę (%)</label>
-                                    <input type="number" value={markupPercentage} onChange={(e) => setMarkupPercentage(e.target.value)} step="1" min="0" className={inputClass} placeholder="np. 30" />
-                                </div>
-                                <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
-                                    <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
-                                </LabelWithTooltip>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Jednostka</label>
-                                    <div className={`${inputClass} bg-gray-100 text-gray-600 cursor-not-allowed`}>
-                                        {METHOD_UNIT_LABELS[unit] || unit}
-                                    </div>
-                                </div>
-                            </div>
+                            {/* No markup/setup/unit row for TIME — markup is set per-rate in Settings */}
                         </>
                     ) : (
                         /* Non-TIME methods: unit_price, setup_fee, internal_cost */
@@ -2024,11 +2013,14 @@ function LaborRateSettingsForm({
     onSave,
 }: {
     settings: LaborRateSettings | null
-    onSave: (data: { easy_rate: number; medium_rate: number; hard_rate: number }) => Promise<void>
+    onSave: (data: { easy_rate: number; medium_rate: number; hard_rate: number; easy_markup: number; medium_markup: number; hard_markup: number }) => Promise<void>
 }) {
     const [easyRate, setEasyRate] = useState(String(settings?.easy_rate ?? '0'))
     const [mediumRate, setMediumRate] = useState(String(settings?.medium_rate ?? '0'))
     const [hardRate, setHardRate] = useState(String(settings?.hard_rate ?? '0'))
+    const [easyMarkup, setEasyMarkup] = useState(String(settings?.easy_markup ?? '0'))
+    const [mediumMarkup, setMediumMarkup] = useState(String(settings?.medium_markup ?? '0'))
+    const [hardMarkup, setHardMarkup] = useState(String(settings?.hard_markup ?? '0'))
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
 
@@ -2039,6 +2031,9 @@ function LaborRateSettingsForm({
             easy_rate: parseFloat(easyRate) || 0,
             medium_rate: parseFloat(mediumRate) || 0,
             hard_rate: parseFloat(hardRate) || 0,
+            easy_markup: parseFloat(easyMarkup) || 0,
+            medium_markup: parseFloat(mediumMarkup) || 0,
+            hard_markup: parseFloat(hardMarkup) || 0,
         })
         setSaving(false)
         setSaved(true)
@@ -2046,27 +2041,41 @@ function LaborRateSettingsForm({
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border p-6 max-w-md">
+        <div className="bg-white rounded-xl shadow-sm border p-6 max-w-xl">
             <p className="text-sm text-gray-500 mb-4">
-                Ustaw stawki godzinowe dla każdego poziomu trudności. Koszt robocizny jest dodawany do kosztu własnego wyceny.
+                Ustaw stawki godzinowe i narzuty procentowe dla każdego poziomu trudności. Narzut jest doliczany do kosztu robocizny przy kalkulacji ceny dla klienta.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
                 {[
-                    { label: 'Łatwa (Easy)', value: easyRate, setter: setEasyRate },
-                    { label: 'Średnia (Medium)', value: mediumRate, setter: setMediumRate },
-                    { label: 'Trudna (Hard)', value: hardRate, setter: setHardRate },
-                ].map(({ label, value, setter }) => (
-                    <div key={label}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{label} — PLN/godz.</label>
-                        <input
-                            type="number"
-                            value={value}
-                            onChange={(e) => setter(e.target.value)}
-                            step="0.01"
-                            min="0"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="0.00"
-                        />
+                    { label: 'Łatwa (Easy)', rateValue: easyRate, rateSetter: setEasyRate, markupValue: easyMarkup, markupSetter: setEasyMarkup },
+                    { label: 'Średnia (Medium)', rateValue: mediumRate, rateSetter: setMediumRate, markupValue: mediumMarkup, markupSetter: setMediumMarkup },
+                    { label: 'Trudna (Hard)', rateValue: hardRate, rateSetter: setHardRate, markupValue: hardMarkup, markupSetter: setHardMarkup },
+                ].map(({ label, rateValue, rateSetter, markupValue, markupSetter }) => (
+                    <div key={label} className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{label} — PLN/godz.</label>
+                            <input
+                                type="number"
+                                value={rateValue}
+                                onChange={(e) => rateSetter(e.target.value)}
+                                step="0.01"
+                                min="0"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Narzut (%)</label>
+                            <input
+                                type="number"
+                                value={markupValue}
+                                onChange={(e) => markupSetter(e.target.value)}
+                                step="1"
+                                min="0"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="0"
+                            />
+                        </div>
                     </div>
                 ))}
                 <div className="flex items-center gap-3 pt-2">
