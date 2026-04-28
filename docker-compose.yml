@@ -4,10 +4,10 @@
 #
 # CRITICAL: DNS collision prevention
 # Both staging and production have a 'backend' service on the shared 'coolify'
-# Docker network. Docker DNS can resolve 'backend' to EITHER environment's
-# container randomly. Frontend uses BACKEND_URL env var to connect to backend
-# through the 'internal' network (isolated per-deployment) where 'backend'
-# DNS resolves unambiguously to this deployment's backend only.
+# Docker network. Docker DNS resolves 'backend' to EITHER environment randomly.
+# Fix: Each backend gets a unique alias 'printflow-api-${ENVIRONMENT}' on the
+# coolify network (e.g. printflow-api-production, printflow-api-staging).
+# Frontend BACKEND_URL uses this unique alias instead of generic 'backend'.
 version: '3.8'
 
 services:
@@ -66,9 +66,8 @@ services:
       start_period: 40s
     networks:
       coolify:
-      internal:
         aliases:
-          - printflow-api
+          - printflow-api-${ENVIRONMENT:-local}
     command: >
       sh -c "
         alembic upgrade head &&
@@ -107,7 +106,7 @@ services:
         celery -A app.core.celery worker --loglevel=info --concurrency=4
       "
     networks:
-      - internal
+      - coolify
 
   # Celery Beat for scheduled tasks
   celery_beat:
@@ -141,7 +140,7 @@ services:
         celery -A app.core.celery beat --loglevel=info
       "
     networks:
-      - internal
+      - coolify
 
   # Frontend (Next.js)
   frontend:
@@ -149,7 +148,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        BACKEND_URL: ${BACKEND_URL:-http://printflow-api:8000}
+        BACKEND_URL: ${BACKEND_URL:-http://printflow-api-${ENVIRONMENT:-local}:8000}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
@@ -159,7 +158,7 @@ services:
       - 3000
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      BACKEND_URL: ${BACKEND_URL:-http://printflow-api:8000}
+      BACKEND_URL: ${BACKEND_URL:-http://printflow-api-${ENVIRONMENT:-local}:8000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-}
     depends_on:
@@ -168,7 +167,6 @@ services:
       test: [ "NONE" ]
     networks:
       - coolify
-      - internal
 
 volumes:
   pdf_storage:
@@ -177,5 +175,3 @@ volumes:
 networks:
   coolify:
     external: true
-  internal:
-    driver: bridge
