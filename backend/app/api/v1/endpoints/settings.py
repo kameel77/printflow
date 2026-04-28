@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+import logging
 
 from app.core.database import get_db
 from app.models.models import LaborRateSettings, Process, CalculationMethod
 from app.schemas.schemas import LaborRateSettingsResponse, LaborRateSettingsUpdate
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/labor-rates", response_model=LaborRateSettingsResponse)
@@ -41,16 +43,29 @@ async def upsert_labor_rates(
     await db.refresh(settings)
 
     # Auto-recalculate all TIME processes with new rates/markups
-    from app.api.v1.endpoints.processes import _compute_time_prices
+    try:
+        from app.api.v1.endpoints.processes import _compute_time_prices
 
-    time_result = await db.execute(
-        select(Process)
-        .options(selectinload(Process.labor_entries))
-        .where(Process.method == CalculationMethod.TIME)
-    )
-    time_processes = time_result.scalars().all()
-    for proc in time_processes:
-        await _compute_time_prices(db, proc)
-    await db.flush()
+        time_result = await db.execute(
+            select(Process)
+            .options(selectinload(Process.labor_entries))
+            .where(Process.method == CalculationMethod.TIME)
+        )
+        time_processes = time_result.scalars().all()
+        for proc in time_processes:
+            await _compute_time_prices(db, proc)
+        await db.flush()
+    except Exception as e:
+        logger.error(f"Auto-recalculation of TIME processes failed: {e}")
+        # Don't fail the rate save — just log the error
 
+    # Explicit commit to ensure data persists before response
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to commit labor rate settings: {e}")
+        raise HTTPException(status_code=500, detail="Błąd zapisu stawek do bazy danych")
+
+    await db.refresh(settings)
     return settings

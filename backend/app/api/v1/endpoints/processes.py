@@ -5,12 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List
+import logging
 
 from app.core.database import get_db
 from app.models.models import Process, ProcessLaborEntry, LaborRateSettings
 from app.schemas.schemas import ProcessCreate, ProcessResponse, ProcessUpdate
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 async def _compute_time_prices(db: AsyncSession, process: Process) -> None:
@@ -86,6 +88,16 @@ async def create_process(
     await _compute_time_prices(db, db_process)
     await db.flush()
     await db.refresh(db_process, ["labor_entries"])
+
+    # Explicit commit to ensure data persists before response
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to commit process creation: {e}")
+        raise HTTPException(status_code=500, detail="Błąd zapisu procesu do bazy danych")
+
+    await db.refresh(db_process, ["labor_entries"])
     return db_process
 
 
@@ -142,6 +154,16 @@ async def update_process(
 
     await _compute_time_prices(db, process)
     await db.flush()
+    await db.refresh(process, ["labor_entries"])
+
+    # Explicit commit to ensure data persists before response
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to commit process update: {e}")
+        raise HTTPException(status_code=500, detail="Błąd zapisu procesu do bazy danych")
+
     await db.refresh(process, ["labor_entries"])
     return process
 

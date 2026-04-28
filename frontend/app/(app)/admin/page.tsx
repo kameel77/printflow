@@ -2031,17 +2031,22 @@ function LaborRateSettingsForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSaving(true)
-        await onSave({
-            easy_rate: parseFloat(easyRate) || 0,
-            medium_rate: parseFloat(mediumRate) || 0,
-            hard_rate: parseFloat(hardRate) || 0,
-            easy_markup: parseFloat(easyMarkup) || 0,
-            medium_markup: parseFloat(mediumMarkup) || 0,
-            hard_markup: parseFloat(hardMarkup) || 0,
-        })
-        setSaving(false)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        try {
+            await onSave({
+                easy_rate: parseFloat(easyRate) || 0,
+                medium_rate: parseFloat(mediumRate) || 0,
+                hard_rate: parseFloat(hardRate) || 0,
+                easy_markup: parseFloat(easyMarkup) || 0,
+                medium_markup: parseFloat(mediumMarkup) || 0,
+                hard_markup: parseFloat(hardMarkup) || 0,
+            })
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Błąd zapisu stawek')
+        } finally {
+            setSaving(false)
+        }
     }
 
     return (
