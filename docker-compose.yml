@@ -148,7 +148,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        BACKEND_URL: ${BACKEND_URL:-http://printflow-api-${ENVIRONMENT:-local}:8000}
+        BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
@@ -158,7 +158,7 @@ services:
       - 3000
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      BACKEND_URL: ${BACKEND_URL:-http://printflow-api-${ENVIRONMENT:-local}:8000}
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-}
     depends_on:
