@@ -1562,6 +1562,8 @@ function ProcessModal({
     onSave: (data: any) => void
     onClose: () => void
 }) {
+    const METHOD_UNIT_MAP: Record<string, string> = { AREA: 'm2', LINEAR: 'mb', TIME: 'min', UNIT: 'szt' }
+    const METHOD_UNIT_LABELS: Record<string, string> = { m2: 'm²', mb: 'mb', min: 'min', szt: 'szt' }
     const [name, setName] = useState(process?.name || '')
     const [method, setMethod] = useState(process?.method || 'AREA')
     const [unitPrice, setUnitPrice] = useState(process ? String(Number(process.unit_price)) : '0')
@@ -1570,7 +1572,10 @@ function ProcessModal({
     const [markupPercentage, setMarkupPercentage] = useState(process ? String(Number(process.markup_percentage)) : '0')
     const [marginW, setMarginW] = useState(process ? String(Number(process.margin_w_cm)) : '0')
     const [marginH, setMarginH] = useState(process ? String(Number(process.margin_h_cm)) : '0')
-    const [unit, setUnit] = useState(process?.unit || 'm2')
+    const unit = METHOD_UNIT_MAP[method] || 'm2'
+    const handleMethodChange = (newMethod: string) => {
+        setMethod(newMethod)
+    }
     const [isActive, setIsActive] = useState(process?.is_active ?? true)
     const [processLaborEntries, setProcessLaborEntries] = useState<{ minutes: string; difficulty: string }[]>(
         process?.labor_entries?.map(e => ({ minutes: String(Number(e.minutes)), difficulty: e.difficulty })) || []
@@ -1640,7 +1645,7 @@ function ProcessModal({
                         </div>
                         <div>
                             <LabelWithTooltip label="Metoda *" tooltipText={tooltipMethod || undefined}>
-                                <select value={method} onChange={(e) => setMethod(e.target.value)} className={inputClass}>
+                                <select value={method} onChange={(e) => handleMethodChange(e.target.value)} className={inputClass}>
                                     <option value="AREA">AREA (powierzchnia)</option>
                                     <option value="LINEAR">LINEAR (obwód)</option>
                                     <option value="TIME">TIME (czas)</option>
@@ -1740,11 +1745,9 @@ function ProcessModal({
                         </LabelWithTooltip>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Jednostka</label>
-                            <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inputClass}>
-                                <option value="m2">m²</option>
-                                <option value="mb">mb</option>
-                                <option value="szt">szt</option>
-                            </select>
+                            <div className={`${inputClass} bg-gray-100 text-gray-600 cursor-not-allowed`}>
+                                {METHOD_UNIT_LABELS[unit] || unit}
+                            </div>
                         </div>
                     </div>
 
