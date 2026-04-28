@@ -1,11 +1,28 @@
 # PrintFlow MIS - Backend Application
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.core.database import engine, Base
+
+
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    """Prevent Cloudflare and browsers from caching API responses.
+
+    Without this, Cloudflare CDN caches JSON responses and serves stale data
+    (observed: cf-cache-status: HIT with Age: 4905s on /api/v1/ endpoints).
+    """
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+        return response
 
 
 @asynccontextmanager
@@ -25,6 +42,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Prevent Cloudflare from caching API responses
+app.add_middleware(NoCacheMiddleware)
 
 # CORS
 app.add_middleware(
