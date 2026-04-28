@@ -1,3 +1,6 @@
+# PrintFlow MIS — Production deployment (Coolify / Docker Compose)
+# NOTE: Do NOT use hardcoded container_name - Coolify handles naming
+# and collisions occur between staging/main environments.
 version: '3.8'
 
 services:
@@ -7,7 +10,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: printflow_backend
+
     restart: unless-stopped
     working_dir: /app
     environment:
@@ -55,6 +58,7 @@ services:
       start_period: 40s
     networks:
       - coolify
+      - internal
     command: >
       sh -c "
         alembic upgrade head &&
@@ -66,7 +70,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: printflow_celery_worker
+
     restart: unless-stopped
     working_dir: /app
     environment:
@@ -93,14 +97,14 @@ services:
         celery -A app.core.celery worker --loglevel=info --concurrency=4
       "
     networks:
-      - coolify
+      - internal
 
   # Celery Beat for scheduled tasks
   celery_beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: printflow_celery_beat
+
     restart: unless-stopped
     working_dir: /app
     environment:
@@ -127,7 +131,7 @@ services:
         celery -A app.core.celery beat --loglevel=info
       "
     networks:
-      - coolify
+      - internal
 
   # Frontend (Next.js)
   frontend:
@@ -139,7 +143,7 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-    container_name: printflow_frontend
+
     restart: unless-stopped
     expose:
       - 3000
@@ -154,6 +158,7 @@ services:
       test: [ "NONE" ]
     networks:
       - coolify
+      - internal
 
 volumes:
   pdf_storage:
@@ -162,3 +167,5 @@ volumes:
 networks:
   coolify:
     external: true
+  internal:
+    driver: bridge
