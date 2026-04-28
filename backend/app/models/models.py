@@ -92,9 +92,10 @@ class Process(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     method = Column(Enum(CalculationMethod), nullable=False)
-    unit_price = Column(Numeric(10, 2), nullable=False)
+    unit_price = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
     setup_fee = Column(Numeric(10, 2), default=Decimal("0.00"))
     internal_cost = Column(Numeric(10, 2))
+    markup_percentage = Column(Numeric(5, 2), default=Decimal("0.00"))
     margin_w_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     margin_h_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
     unit = Column(String(10))
@@ -107,6 +108,8 @@ class Process(Base):
     tooltip_internal_cost = Column(String(500))
     tooltip_margin_w_cm = Column(String(500))
     tooltip_margin_h_cm = Column(String(500))
+
+    labor_entries = relationship("ProcessLaborEntry", back_populates="process", cascade="all, delete-orphan", order_by="ProcessLaborEntry.sort_order")
 
 
 class ProductTemplate(Base):
@@ -145,11 +148,23 @@ class TemplateLaborEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("product_templates.id", ondelete="CASCADE"))
-    hours = Column(Numeric(10, 2), nullable=False)
+    minutes = Column(Numeric(10, 2), nullable=False)
     difficulty = Column(Enum(LaborDifficulty), nullable=False)
     sort_order = Column(Integer, default=0)
 
     template = relationship("ProductTemplate", back_populates="labor_entries")
+
+
+class ProcessLaborEntry(Base):
+    __tablename__ = "process_labor_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    process_id = Column(Integer, ForeignKey("processes.id", ondelete="CASCADE"))
+    minutes = Column(Numeric(10, 2), nullable=False)
+    difficulty = Column(Enum(LaborDifficulty), nullable=False)
+    sort_order = Column(Integer, default=0)
+
+    process = relationship("Process", back_populates="labor_entries")
 
 
 class TemplateComponent(Base):

@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models.models import (
     Material,
     Process,
+    ProcessLaborEntry,
     ProductTemplate,
     TemplateComponent,
     LaborRateSettings,
@@ -23,7 +24,9 @@ async def build_db_context(db: AsyncSession) -> dict:
     """Build the db_context dict that PrintFlowEngine expects, from real DB data."""
 
     # --- Processes ---
-    proc_result = await db.execute(select(Process))
+    proc_result = await db.execute(
+        select(Process).options(selectinload(Process.labor_entries))
+    )
     processes = {p.id: {
         "id": p.id,
         "name": p.name,
@@ -31,9 +34,14 @@ async def build_db_context(db: AsyncSession) -> dict:
         "unit_price": float(p.unit_price),
         "internal_cost": float(p.internal_cost) if p.internal_cost else 0.0,
         "setup_fee": float(p.setup_fee) if p.setup_fee else 0.0,
+        "markup_percentage": float(p.markup_percentage) if p.markup_percentage else 0.0,
         "margin_w_cm": float(p.margin_w_cm) if p.margin_w_cm else 0.0,
         "margin_h_cm": float(p.margin_h_cm) if p.margin_h_cm else 0.0,
         "unit": p.unit or "szt",
+        "labor_entries": [
+            {"minutes": float(e.minutes), "difficulty": e.difficulty.value}
+            for e in p.labor_entries
+        ],
     } for p in proc_result.scalars().all()}
 
     # --- Materials & Variants ---
@@ -94,7 +102,7 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
             "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
             "labor_entries": [
-                {"hours": float(e.hours), "difficulty": e.difficulty.value}
+                {"minutes": float(e.minutes), "difficulty": e.difficulty.value}
                 for e in t.labor_entries
             ],
             "components": components,

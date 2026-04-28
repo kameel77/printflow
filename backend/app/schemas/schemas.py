@@ -87,12 +87,29 @@ class MaterialResponse(MaterialBase):
 
 
 # Process Schemas
+class ProcessLaborEntryCreate(BaseModel):
+    minutes: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+
+class ProcessLaborEntryResponse(BaseModel):
+    id: int
+    minutes: Decimal
+    difficulty: LaborDifficulty
+    sort_order: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 class ProcessBase(BaseModel):
     name: str
     method: CalculationMethod
-    unit_price: Decimal
+    unit_price: Decimal = Decimal("0.00")
     setup_fee: Decimal = Decimal("0.00")
     internal_cost: Optional[Decimal] = None
+    markup_percentage: Decimal = Decimal("0.00")
     margin_w_cm: Decimal = Decimal("0.0")
     margin_h_cm: Decimal = Decimal("0.0")
     unit: Optional[str] = None
@@ -106,7 +123,7 @@ class ProcessBase(BaseModel):
 
 
 class ProcessCreate(ProcessBase):
-    pass
+    labor_entries: List[ProcessLaborEntryCreate] = []
 
 
 class ProcessUpdate(BaseModel):
@@ -115,10 +132,12 @@ class ProcessUpdate(BaseModel):
     unit_price: Optional[Decimal] = None
     setup_fee: Optional[Decimal] = None
     internal_cost: Optional[Decimal] = None
+    markup_percentage: Optional[Decimal] = None
     margin_w_cm: Optional[Decimal] = None
     margin_h_cm: Optional[Decimal] = None
     unit: Optional[str] = None
     is_active: Optional[bool] = None
+    labor_entries: Optional[List[ProcessLaborEntryCreate]] = None
     tooltip_method: Optional[str] = None
     tooltip_unit_price: Optional[str] = None
     tooltip_setup_fee: Optional[str] = None
@@ -129,21 +148,22 @@ class ProcessUpdate(BaseModel):
 
 class ProcessResponse(ProcessBase):
     id: int
-    
+    labor_entries: List[ProcessLaborEntryResponse] = []
+
     class Config:
         from_attributes = True
 
 
 # Template Schemas
 class TemplateLaborEntryCreate(BaseModel):
-    hours: Decimal
+    minutes: Decimal
     difficulty: LaborDifficulty
     sort_order: int = 0
 
 
 class TemplateLaborEntryResponse(BaseModel):
     id: int
-    hours: Decimal
+    minutes: Decimal
     difficulty: LaborDifficulty
     sort_order: int = 0
 

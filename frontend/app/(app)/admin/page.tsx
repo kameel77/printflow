@@ -43,6 +43,13 @@ interface Material {
     created_at: string
 }
 
+interface ProcessLaborEntry {
+    id?: number
+    minutes: number | string
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+    sort_order?: number
+}
+
 interface ProcessItem {
     id: number
     name: string
@@ -50,10 +57,12 @@ interface ProcessItem {
     unit_price: number
     setup_fee: number
     internal_cost: number | null
+    markup_percentage: number
     margin_w_cm: number
     margin_h_cm: number
     unit: string | null
     is_active: boolean
+    labor_entries: ProcessLaborEntry[]
     tooltip_method?: string | null
     tooltip_unit_price?: string | null
     tooltip_setup_fee?: string | null
@@ -75,7 +84,7 @@ interface TemplateComponent {
 
 interface TemplateLaborEntry {
     id?: number
-    hours: number
+    minutes: number
     difficulty: 'EASY' | 'MEDIUM' | 'HARD'
     sort_order?: number
 }
@@ -969,8 +978,8 @@ function TemplateModal({
     const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
     const [maxBrytWidth, setMaxBrytWidth] = useState(template?.max_bryt_width_cm != null ? String(Number(template.max_bryt_width_cm)) : '')
     const [isActive, setIsActive] = useState(template?.is_active ?? true)
-    const [laborEntries, setLaborEntries] = useState<{ hours: string; difficulty: string }[]>(
-        template?.labor_entries?.map(e => ({ hours: String(Number(e.hours)), difficulty: e.difficulty })) || []
+    const [laborEntries, setLaborEntries] = useState<{ minutes: string; difficulty: string }[]>(
+        template?.labor_entries?.map(e => ({ minutes: String(Number(e.minutes)), difficulty: e.difficulty })) || []
     )
     const [components, setComponents] = useState<
         { type: 'material' | 'process'; refId: string; isRequired: boolean; sortOrder: number }[]
@@ -1019,8 +1028,8 @@ function TemplateModal({
             max_bryt_width_cm: maxBrytWidth ? parseFloat(maxBrytWidth) : null,
             is_active: isActive,
             labor_entries: laborEntries
-                .filter(e => e.hours && parseFloat(e.hours) > 0)
-                .map((e, i) => ({ hours: parseFloat(e.hours), difficulty: e.difficulty, sort_order: i })),
+                .filter(e => e.minutes && parseFloat(e.minutes) > 0)
+                .map((e, i) => ({ minutes: parseFloat(e.minutes), difficulty: e.difficulty, sort_order: i })),
             components: components.map((c) => ({
                 material_id: c.type === 'material' ? parseInt(c.refId) : null,
                 process_id: c.type === 'process' ? parseInt(c.refId) : null,
@@ -1132,13 +1141,14 @@ function TemplateModal({
                         </label>
                     </div>
 
-                    {/* Labor cost */}
+                    {/* Labor cost — HIDDEN: feature disabled on product level, kept for future use */}
+                    {false && (
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Robocizna</h3>
                             <button
                                 type="button"
-                                onClick={() => setLaborEntries(prev => [...prev, { hours: '', difficulty: 'MEDIUM' }])}
+                                onClick={() => setLaborEntries(prev => [...prev, { minutes: '', difficulty: 'MEDIUM' }])}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1156,11 +1166,11 @@ function TemplateModal({
                                         <span className="text-xs text-gray-400 font-mono w-5 text-center">{idx + 1}</span>
                                         <input
                                             type="number"
-                                            value={entry.hours}
-                                            onChange={(e) => setLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, hours: e.target.value } : x))}
-                                            step="0.01"
+                                            value={entry.minutes}
+                                            onChange={(e) => setLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, minutes: e.target.value } : x))}
+                                            step="1"
                                             min="0"
-                                            placeholder="godz."
+                                            placeholder="min."
                                             className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                         <select
@@ -1186,6 +1196,7 @@ function TemplateModal({
                             </div>
                         )}
                     </div>
+                    )}
 
                     {/* Components */}
                     <div>
@@ -1556,10 +1567,14 @@ function ProcessModal({
     const [unitPrice, setUnitPrice] = useState(process ? String(Number(process.unit_price)) : '0')
     const [setupFee, setSetupFee] = useState(process ? String(Number(process.setup_fee)) : '0')
     const [internalCost, setInternalCost] = useState(process?.internal_cost ? String(Number(process.internal_cost)) : '')
+    const [markupPercentage, setMarkupPercentage] = useState(process ? String(Number(process.markup_percentage)) : '0')
     const [marginW, setMarginW] = useState(process ? String(Number(process.margin_w_cm)) : '0')
     const [marginH, setMarginH] = useState(process ? String(Number(process.margin_h_cm)) : '0')
     const [unit, setUnit] = useState(process?.unit || 'm2')
     const [isActive, setIsActive] = useState(process?.is_active ?? true)
+    const [processLaborEntries, setProcessLaborEntries] = useState<{ minutes: string; difficulty: string }[]>(
+        process?.labor_entries?.map(e => ({ minutes: String(Number(e.minutes)), difficulty: e.difficulty })) || []
+    )
     // Tooltips
     const [tooltipMethod, setTooltipMethod] = useState(process?.tooltip_method || '')
     const [tooltipUnitPrice, setTooltipUnitPrice] = useState(process?.tooltip_unit_price || '')
@@ -1569,19 +1584,27 @@ function ProcessModal({
     const [tooltipMarginH, setTooltipMarginH] = useState(process?.tooltip_margin_h_cm || '')
     const [saving, setSaving] = useState(false)
 
+    const isTimeMethod = method === 'TIME'
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSaving(true)
-        const payload = {
+        const payload: any = {
             name,
             method,
-            unit_price: parseFloat(unitPrice),
+            unit_price: isTimeMethod ? 0 : parseFloat(unitPrice),
             setup_fee: parseFloat(setupFee),
-            internal_cost: internalCost ? parseFloat(internalCost) : null,
+            internal_cost: isTimeMethod ? 0 : (internalCost ? parseFloat(internalCost) : null),
+            markup_percentage: isTimeMethod ? parseFloat(markupPercentage) : 0,
             margin_w_cm: parseFloat(marginW),
             margin_h_cm: parseFloat(marginH),
             unit: unit || null,
             is_active: isActive,
+            labor_entries: isTimeMethod
+                ? processLaborEntries
+                    .filter(e => e.minutes && parseFloat(e.minutes) > 0)
+                    .map((e, i) => ({ minutes: parseFloat(e.minutes), difficulty: e.difficulty, sort_order: i }))
+                : [],
             tooltip_method: tooltipMethod || null,
             tooltip_unit_price: tooltipUnitPrice || null,
             tooltip_setup_fee: tooltipSetupFee || null,
@@ -1627,17 +1650,86 @@ function ProcessModal({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <LabelWithTooltip label="Cena/jedn. *" tooltipText={tooltipUnitPrice || undefined}>
-                            <input type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} step="0.01" required className={inputClass} />
-                        </LabelWithTooltip>
-                        <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
-                            <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
-                        </LabelWithTooltip>
-                        <LabelWithTooltip label="Koszt wewn." tooltipText={tooltipInternalCost || undefined}>
-                            <input type="number" value={internalCost} onChange={(e) => setInternalCost(e.target.value)} step="0.01" className={inputClass} placeholder="Opcjonalnie" />
-                        </LabelWithTooltip>
-                    </div>
+                    {/* TIME method: labor entries + markup */}
+                    {isTimeMethod ? (
+                        <>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Robocizna</h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setProcessLaborEntries(prev => [...prev, { minutes: '', difficulty: 'MEDIUM' }])}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Dodaj wpis
+                                    </button>
+                                </div>
+                                {processLaborEntries.length === 0 ? (
+                                    <p className="text-sm text-gray-400 italic">Brak wpisów robocizny. Dodaj wpis, aby określić koszt procesu.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {processLaborEntries.map((entry, idx) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                <span className="text-xs text-gray-400 font-mono w-5 text-center">{idx + 1}</span>
+                                                <input
+                                                    type="number"
+                                                    value={entry.minutes}
+                                                    onChange={(e) => setProcessLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, minutes: e.target.value } : x))}
+                                                    step="1"
+                                                    min="0"
+                                                    placeholder="min."
+                                                    className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                                <select
+                                                    value={entry.difficulty}
+                                                    onChange={(e) => setProcessLaborEntries(prev => prev.map((x, i) => i === idx ? { ...x, difficulty: e.target.value } : x))}
+                                                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                >
+                                                    <option value="EASY">Łatwa</option>
+                                                    <option value="MEDIUM">Średnia</option>
+                                                    <option value="HARD">Trudna</option>
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProcessLaborEntries(prev => prev.filter((_, i) => i !== idx))}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Narzut na robociznę (%)</label>
+                                    <input type="number" value={markupPercentage} onChange={(e) => setMarkupPercentage(e.target.value)} step="1" min="0" className={inputClass} placeholder="np. 30" />
+                                </div>
+                                <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
+                                    <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
+                                </LabelWithTooltip>
+                            </div>
+                        </>
+                    ) : (
+                        /* Non-TIME methods: unit_price, setup_fee, internal_cost */
+                        <div className="grid grid-cols-3 gap-4">
+                            <LabelWithTooltip label="Cena/jedn. *" tooltipText={tooltipUnitPrice || undefined}>
+                                <input type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} step="0.01" required className={inputClass} />
+                            </LabelWithTooltip>
+                            <LabelWithTooltip label="Opłata startowa" tooltipText={tooltipSetupFee || undefined}>
+                                <input type="number" value={setupFee} onChange={(e) => setSetupFee(e.target.value)} step="0.01" className={inputClass} />
+                            </LabelWithTooltip>
+                            <LabelWithTooltip label="Koszt wewn." tooltipText={tooltipInternalCost || undefined}>
+                                <input type="number" value={internalCost} onChange={(e) => setInternalCost(e.target.value)} step="0.01" className={inputClass} placeholder="Opcjonalnie" />
+                            </LabelWithTooltip>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-3 gap-4">
                         <LabelWithTooltip label="Margines W (cm)" tooltipText={tooltipMarginW || undefined}>

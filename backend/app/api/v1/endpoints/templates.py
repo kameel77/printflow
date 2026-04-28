@@ -56,7 +56,7 @@ async def create_template(
         )
     for i, entry in enumerate(template.labor_entries):
         db_template.labor_entries.append(
-            TemplateLaborEntry(hours=entry.hours, difficulty=entry.difficulty, sort_order=i)
+            TemplateLaborEntry(minutes=entry.minutes, difficulty=entry.difficulty, sort_order=i)
         )
     db.add(db_template)
     await db.flush()
@@ -124,7 +124,7 @@ async def update_template(
         template.labor_entries.clear()
         for i, entry_data in enumerate(labor_entries_data):
             template.labor_entries.append(
-                TemplateLaborEntry(hours=entry_data["hours"], difficulty=entry_data["difficulty"], sort_order=i)
+                TemplateLaborEntry(minutes=entry_data["minutes"], difficulty=entry_data["difficulty"], sort_order=i)
             )
 
     await db.flush()

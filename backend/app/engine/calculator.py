@@ -444,63 +444,107 @@ class PrintFlowEngine:
                 if not proc:
                     continue
                 
-                # Calculate process quantity using the active orientation
-                if proc['method'] == CalculationMethod.LINEAR:
-                    panel_w_with_overlap = (cur_w_g / num_panels) + (overlap if is_split else 0)
-                    p_qty = (2 * (panel_w_with_overlap + cur_h_g)) / 100 * num_panels * req.quantity
-                else:  # AREA
-                    p_qty = (cur_w_g / 100) * (cur_h_g / 100) * req.quantity
-                
-                cost = (p_qty * self._q(proc.get('internal_cost', 0))) + self._q(proc.get('setup_fee', 0))
-                price = (p_qty * self._q(proc['unit_price'])) + self._q(proc.get('setup_fee', 0))
-                
-                total_cost += cost
-                total_price += price
-                
-                self.log(f"Proces {proc['name']}: {p_qty:.2f} {proc.get('unit')} | Koszt: {cost:.2f} | Cena: {price:.2f}")
-
                 rotated_flag = cur_w_g == h_g and cur_h_g == w_g and w_g != h_g
                 rot_text = "tak" if rotated_flag else "nie"
 
-                tech_view.append(ComponentResult(
-                    name=proc['name'],
-                    type="PROCESS",
-                    qty=float(p_qty),
-                    unit=proc.get('unit', 'szt'),
-                    price_net=self._money(price),
-                    details=f"Metoda: {proc['method']}, Naddatek: {proc.get('margin_w_cm', 0)}cm, Rotacja: {rot_text}",
-                    is_rotated=rotated_flag
-                ))
+                if proc['method'] == 'TIME':
+                    # TIME method: cost calculated from labor entries
+                    proc_labor_entries = proc.get('labor_entries', [])
+                    rates = self.db.get('labor_rate_settings', {})
+                    rate_map = {
+                        'EASY': self._q(rates.get('easy_rate', 0)) / Decimal("60"),
+                        'MEDIUM': self._q(rates.get('medium_rate', 0)) / Decimal("60"),
+                        'HARD': self._q(rates.get('hard_rate', 0)) / Decimal("60"),
+                    }
+                    difficulty_labels = {'EASY': 'Łatwa', 'MEDIUM': 'Średnia', 'HARD': 'Trudna'}
+                    proc_labor_cost = Decimal("0")
+                    for le in proc_labor_entries:
+                        minutes_val = self._q(le.get('minutes', 0))
+                        difficulty = le.get('difficulty', '')
+                        if minutes_val <= 0:
+                            continue
+                        rate_per_min = rate_map.get(difficulty, Decimal("0"))
+                        entry_cost = minutes_val * rate_per_min
+                        proc_labor_cost += entry_cost
+                        label = difficulty_labels.get(difficulty, difficulty)
+                        self.log(f"  Robocizna procesu ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN")
+
+                    setup = self._q(proc.get('setup_fee', 0))
+                    markup = self._q(proc.get('markup_percentage', 0))
+
+                    cost = proc_labor_cost * req.quantity + setup
+                    price = proc_labor_cost * (1 + markup / Decimal("100")) * req.quantity + setup
+
+                    total_cost += cost
+                    total_price += price
+
+                    self.log(f"Proces TIME {proc['name']}: koszt robocizny/szt={proc_labor_cost:.2f} × {req.quantity}szt + setup={setup:.2f} | Koszt: {cost:.2f} | Markup: {markup}% | Cena: {price:.2f}")
+
+                    tech_view.append(ComponentResult(
+                        name=proc['name'],
+                        type="PROCESS",
+                        qty=float(req.quantity),
+                        unit="szt",
+                        price_net=self._money(price),
+                        details=f"Metoda: TIME, Robocizna/szt: {self._money(proc_labor_cost)} PLN, Narzut: {markup}%, Rotacja: {rot_text}",
+                        is_rotated=rotated_flag
+                    ))
+                else:
+                    # AREA / LINEAR / UNIT methods
+                    if proc['method'] == 'LINEAR':
+                        panel_w_with_overlap = (cur_w_g / num_panels) + (overlap if is_split else 0)
+                        p_qty = (2 * (panel_w_with_overlap + cur_h_g)) / 100 * num_panels * req.quantity
+                    else:  # AREA / UNIT
+                        p_qty = (cur_w_g / 100) * (cur_h_g / 100) * req.quantity
+                    
+                    cost = (p_qty * self._q(proc.get('internal_cost', 0))) + self._q(proc.get('setup_fee', 0))
+                    price = (p_qty * self._q(proc['unit_price'])) + self._q(proc.get('setup_fee', 0))
+                    
+                    total_cost += cost
+                    total_price += price
+                    
+                    self.log(f"Proces {proc['name']}: {p_qty:.2f} {proc.get('unit')} | Koszt: {cost:.2f} | Cena: {price:.2f}")
+
+                    tech_view.append(ComponentResult(
+                        name=proc['name'],
+                        type="PROCESS",
+                        qty=float(p_qty),
+                        unit=proc.get('unit', 'szt'),
+                        price_net=self._money(price),
+                        details=f"Metoda: {proc['method']}, Naddatek: {proc.get('margin_w_cm', 0)}cm, Rotacja: {rot_text}",
+                        is_rotated=rotated_flag
+                    ))
         
-        # Labor cost
+        # Labor cost (template-level, currently hidden from UI)
         labor_cost = Decimal("0")
         labor_entries = template.get('labor_entries', []) if template else []
         if labor_entries:
             rates = self.db.get('labor_rate_settings', {})
+            # Rates stored as PLN/h → convert to PLN/min
             rate_map = {
-                'EASY': self._q(rates.get('easy_rate', 0)),
-                'MEDIUM': self._q(rates.get('medium_rate', 0)),
-                'HARD': self._q(rates.get('hard_rate', 0)),
+                'EASY': self._q(rates.get('easy_rate', 0)) / Decimal("60"),
+                'MEDIUM': self._q(rates.get('medium_rate', 0)) / Decimal("60"),
+                'HARD': self._q(rates.get('hard_rate', 0)) / Decimal("60"),
             }
             difficulty_labels = {'EASY': 'Łatwa', 'MEDIUM': 'Średnia', 'HARD': 'Trudna'}
             for entry in labor_entries:
-                hours_val = self._q(entry.get('hours', 0))
+                minutes_val = self._q(entry.get('minutes', 0))
                 difficulty = entry.get('difficulty', '')
-                if hours_val <= 0:
+                if minutes_val <= 0:
                     continue
-                rate = rate_map.get(difficulty, Decimal("0"))
-                entry_cost = hours_val * rate
+                rate_per_min = rate_map.get(difficulty, Decimal("0"))
+                entry_cost = minutes_val * rate_per_min
                 labor_cost += entry_cost
                 total_cost += entry_cost
                 label = difficulty_labels.get(difficulty, difficulty)
-                self.log(f"Robocizna ({label}): {hours_val}h × {rate} PLN/h = {entry_cost:.2f} PLN")
+                self.log(f"Robocizna ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN")
                 tech_view.append(ComponentResult(
                     name=f"Robocizna — {label}",
                     type="LABOR",
-                    qty=float(hours_val),
-                    unit="godz.",
+                    qty=float(minutes_val),
+                    unit="min",
                     price_net=self._money(entry_cost),
-                    details=f"Stawka: {self._money(rate)} PLN/h",
+                    details=f"Stawka: {self._money(rate_per_min * Decimal('60'))} PLN/h",
                     is_rotated=False
                 ))
 
