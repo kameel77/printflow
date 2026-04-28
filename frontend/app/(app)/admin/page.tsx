@@ -10,6 +10,15 @@ import Header from '@/components/Header'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
+// ── Cache-busting: prevent Cloudflare/browser from serving stale API data ──
+axios.interceptors.request.use((config) => {
+    if (config.url && config.url.includes('/api/')) {
+        const separator = config.url.includes('?') ? '&' : '?'
+        config.url = `${config.url}${separator}_t=${Date.now()}`
+    }
+    return config
+})
+
 export const dynamic = 'force-dynamic'
 
 // ────────── Types ──────────
@@ -237,7 +246,7 @@ export default function AdminPage() {
                 await axios.post(`${API_URL}/templates`, data)
             }
             setShowModal(false)
-            fetchAll()
+            await fetchAll()
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd zapisu')
         }
@@ -254,7 +263,7 @@ export default function AdminPage() {
                 await axios.post(`${API_URL}/materials`, data)
             }
             setShowMaterialModal(false)
-            fetchAll()
+            await fetchAll()
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd zapisu')
         }
@@ -271,7 +280,7 @@ export default function AdminPage() {
                 await axios.post(`${API_URL}/processes`, data)
             }
             setShowProcessModal(false)
-            fetchAll()
+            await fetchAll()
         } catch (err: any) {
             alert(err.response?.data?.detail || 'Błąd zapisu')
         }
@@ -898,9 +907,9 @@ export default function AdminPage() {
             {showMaterialCSVModal && (
                 <MaterialCSVImportModal
                     onClose={() => setShowMaterialCSVModal(false)}
-                    onSuccess={() => {
+                    onSuccess={async () => {
                         setShowMaterialCSVModal(false)
-                        fetchAll()
+                        await fetchAll()
                     }}
                 />
             )}
