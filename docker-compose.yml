@@ -1,6 +1,14 @@
 # PrintFlow MIS — Production deployment (Coolify / Docker Compose)
 # NOTE: Do NOT use hardcoded container_name - Coolify handles naming
 # and collisions occur between staging/main environments.
+#
+# CRITICAL: DNS collision prevention
+# Both staging and production have a 'backend' service on the shared 'coolify'
+# Docker network. Docker DNS can resolve 'backend' to EITHER environment's
+# container randomly. To prevent this, the frontend uses the 'internal' network
+# (which is isolated per-deployment) for backend communication.
+# The backend is removed from the 'coolify' network since Traefik routes
+# external traffic through the frontend only.
 version: '3.8'
 
 services:
@@ -27,6 +35,7 @@ services:
       # OAuth
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       # Gmail API
       GMAIL_CREDENTIALS_PATH: ${GMAIL_CREDENTIALS_PATH:-/app/credentials/gmail_credentials.json}
       GMAIL_TOKEN_PATH: ${GMAIL_TOKEN_PATH:-/app/credentials/gmail_token.json}
@@ -57,7 +66,9 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - coolify
+      # Backend is ONLY on 'internal' network to prevent DNS collisions
+      # on the shared 'coolify' network between staging/production.
+      # Frontend proxies API requests internally via 'internal' network.
       - internal
     command: >
       sh -c "
