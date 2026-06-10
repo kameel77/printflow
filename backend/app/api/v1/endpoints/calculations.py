@@ -101,6 +101,7 @@ async def build_db_context(db: AsyncSession) -> dict:
             "default_margin_h_cm": float(t.default_margin_h_cm) if t.default_margin_h_cm else 0.0,
             "default_overlap_cm": float(t.default_overlap_cm) if t.default_overlap_cm else 2.0,
             "max_bryt_width_cm": float(t.max_bryt_width_cm) if t.max_bryt_width_cm else None,
+            "sale_price_per_m2": float(t.sale_price_per_m2) if t.sale_price_per_m2 is not None else None,
             "labor_entries": [
                 {"minutes": float(e.minutes), "difficulty": e.difficulty.value}
                 for e in t.labor_entries
@@ -228,5 +229,6 @@ async def get_template_for_calculator(
         "default_margin_w_cm": float(template.default_margin_w_cm) if template.default_margin_w_cm else 0.0,
         "default_margin_h_cm": float(template.default_margin_h_cm) if template.default_margin_h_cm else 0.0,
         "default_overlap_cm": float(template.default_overlap_cm) if template.default_overlap_cm else 2.0,
+        "sale_price_per_m2": float(template.sale_price_per_m2) if template.sale_price_per_m2 is not None else None,
         "components": components,
     }

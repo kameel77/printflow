@@ -556,6 +556,16 @@ class PrintFlowEngine:
                     is_rotated=False
                 ))
 
+        # Sale price override: admin-defined price per m² replaces markup-based price
+        sale_price_per_m2 = template.get('sale_price_per_m2') if template else None
+        if sale_price_per_m2 is not None:
+            sale_price = self._q(sale_price_per_m2)
+            area_net_m2 = (self._q(req.width_cm) / 100) * (self._q(req.height_cm) / 100)
+            total_price = sale_price * area_net_m2 * req.quantity
+            self.log(
+                f"Cena sprzedaży: {sale_price:.2f} PLN/m² × {area_net_m2:.4f} m² × {req.quantity} szt. = {total_price:.2f} PLN netto"
+            )
+
         # Calculate margin
         margin_pct = ((total_price - total_cost) / total_price * 100) if total_price > 0 else Decimal("0")
         
@@ -610,6 +620,7 @@ class PrintFlowEngine:
             total_price_net=self._money(total_price),
             total_cost_cogs=self._money(total_cost),
             margin_percentage=float(margin_pct.quantize(Decimal("0.1"))),
+            sale_price_per_m2=float(sale_price_per_m2) if sale_price_per_m2 is not None else None,
             labor_cost_total=self._money(labor_cost),
             gross_dimensions={"width": float(w_g), "height": float(h_g)},
             is_split=is_split,
