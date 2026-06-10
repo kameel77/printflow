@@ -12,6 +12,7 @@ interface CalculationResult {
   total_price_net: number
   total_cost_cogs: number
   margin_percentage: number
+  sale_price_per_m2?: number | null
   gross_dimensions: { width: number; height: number }
   is_split: boolean
   num_panels: number
@@ -47,6 +48,7 @@ interface Template {
   id: number
   name: string
   description: string
+  sale_price_per_m2?: number | null
   components?: Array<{
     id: number
     name: string
@@ -593,6 +595,24 @@ export default function Calculator() {
                     />
                   </div>
                 </div>
+
+                {/* Sale price per m² */}
+                {currentTemplate && (
+                  currentTemplate.sale_price_per_m2 != null ? (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                      <span className="text-sm font-medium text-emerald-800">Cena sprzedaży</span>
+                      <span className="text-sm font-bold text-emerald-800">
+                        {formatCurrency(Number(currentTemplate.sale_price_per_m2))} / m² netto
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-amber-800">
+                        Cena sprzedaży za 1 m² nie została ustalona — cena liczona z narzutów składników.
+                      </p>
+                    </div>
+                  )
+                )}
 
                 {/* Template Components Summary */}
                 {currentTemplate && (

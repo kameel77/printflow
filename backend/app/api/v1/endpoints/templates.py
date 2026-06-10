@@ -48,6 +48,7 @@ async def create_template(
         default_margin_h_cm=template.default_margin_h_cm,
         default_overlap_cm=template.default_overlap_cm,
         max_bryt_width_cm=template.max_bryt_width_cm,
+        sale_price_per_m2=template.sale_price_per_m2,
         is_active=template.is_active,
     )
     for comp in template.components:

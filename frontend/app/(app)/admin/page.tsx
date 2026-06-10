@@ -106,6 +106,7 @@ interface Template {
     default_margin_h_cm: number
     default_overlap_cm: number
     max_bryt_width_cm: number | null
+    sale_price_per_m2: number | null
     is_active: boolean
     labor_entries: TemplateLaborEntry[]
     components: TemplateComponent[]
@@ -435,6 +436,11 @@ export default function AdminPage() {
                                                             <span>Margines: {Number(t.default_margin_w_cm)}×{Number(t.default_margin_h_cm)} cm</span>
                                                             <span>Zakładka: {Number(t.default_overlap_cm)} cm</span>
                                                             <span>Komponenty: {t.components.length}</span>
+                                                            {t.sale_price_per_m2 != null ? (
+                                                                <span className="font-medium text-emerald-700">Cena sprzedaży: {Number(t.sale_price_per_m2).toFixed(2)} zł/m²</span>
+                                                            ) : (
+                                                                <span className="text-amber-600">Brak ceny sprzedaży/m²</span>
+                                                            )}
                                                         </div>
 
                                                         {/* Component list */}
@@ -993,6 +999,7 @@ function TemplateModal({
     const [marginH, setMarginH] = useState(String(template ? Number(template.default_margin_h_cm) : '0.5'))
     const [overlap, setOverlap] = useState(String(template ? Number(template.default_overlap_cm) : '1.0'))
     const [maxBrytWidth, setMaxBrytWidth] = useState(template?.max_bryt_width_cm != null ? String(Number(template.max_bryt_width_cm)) : '')
+    const [salePricePerM2, setSalePricePerM2] = useState(template?.sale_price_per_m2 != null ? String(Number(template.sale_price_per_m2)) : '')
     const [isActive, setIsActive] = useState(template?.is_active ?? true)
     const [laborEntries, setLaborEntries] = useState<{ minutes: string; difficulty: string }[]>(
         template?.labor_entries?.map(e => ({ minutes: String(Number(e.minutes)), difficulty: e.difficulty })) || []
@@ -1042,6 +1049,7 @@ function TemplateModal({
             default_margin_h_cm: parseFloat(marginH),
             default_overlap_cm: parseFloat(overlap),
             max_bryt_width_cm: maxBrytWidth ? parseFloat(maxBrytWidth) : null,
+            sale_price_per_m2: salePricePerM2 ? parseFloat(salePricePerM2.replace(',', '.')) : null,
             is_active: isActive,
             labor_entries: laborEntries
                 .filter(e => e.minutes && parseFloat(e.minutes) > 0)
@@ -1142,6 +1150,22 @@ function TemplateModal({
                                 placeholder="np. 100"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Cena sprzedaży / m² (netto)</label>
+                        <input
+                            type="number"
+                            value={salePricePerM2}
+                            onChange={(e) => setSalePricePerM2(e.target.value)}
+                            step="0.01"
+                            min="0"
+                            className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="np. 45.00"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                            Gdy ustawiona, cena w kalkulatorze = cena/m² × powierzchnia netto × ilość, a marża liczona jest względem kosztu produkcji. Pozostaw puste, aby cenę liczyły narzuty składników.
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">

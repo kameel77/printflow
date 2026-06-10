@@ -200,6 +200,7 @@ class ProductTemplateBase(BaseModel):
     default_margin_h_cm: Decimal = Decimal("0.0")
     default_overlap_cm: Decimal = Decimal("1.0")
     max_bryt_width_cm: Optional[Decimal] = None
+    sale_price_per_m2: Optional[Decimal] = Field(None, ge=0)
     is_active: bool = True
     tooltip_margin_w_cm: Optional[str] = None
     tooltip_margin_h_cm: Optional[str] = None
@@ -218,6 +219,7 @@ class ProductTemplateUpdate(BaseModel):
     default_margin_h_cm: Optional[Decimal] = None
     default_overlap_cm: Optional[Decimal] = None
     max_bryt_width_cm: Optional[Decimal] = None
+    sale_price_per_m2: Optional[Decimal] = Field(None, ge=0)
     is_active: Optional[bool] = None
     components: Optional[List[TemplateComponentCreate]] = None
     labor_entries: Optional[List[TemplateLaborEntryCreate]] = None
@@ -272,6 +274,7 @@ class CalculationResponse(BaseModel):
     total_price_net: float
     total_cost_cogs: float
     margin_percentage: float
+    sale_price_per_m2: Optional[float] = None
     gross_dimensions: Dict[str, float]
     is_split: bool
     num_panels: int
