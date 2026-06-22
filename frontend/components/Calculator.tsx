@@ -44,8 +44,17 @@ interface CalculationResult {
   debug?: string[];
 }
 
+interface ProductCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
 interface Template {
   id: number;
+  category_id?: number | null;
   name: string;
   description: string;
   sale_price_per_m2?: number | null;
@@ -66,6 +75,7 @@ export default function Calculator() {
   const [width, setWidth] = useState<string>("");
   const [height, setHeight] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [templateId, setTemplateId] = useState<string>("");
   const [overlapOverride, setOverlapOverride] = useState<string>("");
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
@@ -86,6 +96,7 @@ export default function Calculator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
 
@@ -109,6 +120,7 @@ export default function Calculator() {
     try {
       const d = JSON.parse(stored);
       sessionStorage.removeItem("editOfferCalculation");
+      if (d.categoryId) setCategoryId(String(d.categoryId));
       if (d.templateId) setTemplateId(String(d.templateId));
       if (d.width) setWidth(String(d.width));
       if (d.height) setHeight(String(d.height));
@@ -169,8 +181,16 @@ export default function Calculator() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await axios.get(`${API_URL}/calculate/templates`);
-      setTemplates(response.data.templates);
+      const [tRes, cRes] = await Promise.all([
+        axios.get(`${API_URL}/calculate/templates`),
+        axios.get(`${API_URL}/product-categories`).catch(() => ({ data: [] }))
+      ]);
+      setTemplates(tRes.data.templates);
+      setCategories(
+        [...cRes.data]
+          .filter(c => c.is_active)
+          .sort((a, b) => a.sort_order - b.sort_order)
+      );
     } catch (err) {
       console.error("Failed to fetch templates:", err);
       // Fallback templates
@@ -631,22 +651,47 @@ export default function Calculator() {
               </h2>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Wybierz produkt
-                  </label>
-                  <select
-                    value={templateId}
-                    onChange={(e) => setTemplateId(e.target.value)}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? "text-gray-400" : ""}`}
-                  >
-                    <option value="">Wybierz produkt...</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Wybierz kategorię
+                    </label>
+                    <select
+                      value={categoryId}
+                      onChange={(e) => {
+                        setCategoryId(e.target.value);
+                        setTemplateId("");
+                      }}
+                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!categoryId ? "text-gray-400" : ""}`}
+                    >
+                      <option value="">Wszystkie kategorie</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Wybierz produkt
+                    </label>
+                    <select
+                      value={templateId}
+                      onChange={(e) => setTemplateId(e.target.value)}
+                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? "text-gray-400" : ""}`}
+                    >
+                      <option value="">Wybierz produkt...</option>
+                      {templates
+                        .filter(t => !categoryId || String(t.category_id) === categoryId)
+                        .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">

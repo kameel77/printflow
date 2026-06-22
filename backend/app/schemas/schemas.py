@@ -154,6 +154,32 @@ class ProcessResponse(ProcessBase):
         from_attributes = True
 
 
+# Category Schemas
+class ProductCategoryBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    sort_order: int = 0
+    is_active: bool = True
+
+
+class ProductCategoryCreate(ProductCategoryBase):
+    pass
+
+
+class ProductCategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class ProductCategoryResponse(ProductCategoryBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 # Template Schemas
 class TemplateLaborEntryCreate(BaseModel):
     minutes: Decimal
@@ -194,6 +220,7 @@ class TemplateComponentResponse(TemplateComponentBase):
 
 
 class ProductTemplateBase(BaseModel):
+    category_id: Optional[int] = None
     name: str
     description: Optional[str] = None
     default_margin_w_cm: Decimal = Decimal("0.0")
@@ -230,6 +257,7 @@ class ProductTemplateUpdate(BaseModel):
 
 class ProductTemplateResponse(ProductTemplateBase):
     id: int
+    category: Optional[ProductCategoryResponse] = None
     components: List[TemplateComponentResponse] = []
     labor_entries: List[TemplateLaborEntryResponse] = []
 

@@ -52,6 +52,14 @@ interface Material {
   created_at: string;
 }
 
+interface ProductCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
 interface ProcessLaborEntry {
   id?: number;
   minutes: number | string;
@@ -100,6 +108,7 @@ interface TemplateLaborEntry {
 
 interface Template {
   id: number;
+  category_id?: number | null;
   name: string;
   description: string | null;
   default_margin_w_cm: number;
@@ -135,12 +144,13 @@ interface UserItem {
 }
 
 // ────────── Tab types ──────────
-type TabId = "templates" | "materials" | "processes" | "users" | "settings";
+type TabId = "templates" | "categories" | "materials" | "processes" | "users" | "settings";
 
 // ────────── Main Component ──────────
 export default function AdminPage() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>("templates");
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [processes, setProcesses] = useState<ProcessItem[]>([]);
@@ -149,12 +159,17 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [laborRates, setLaborRates] = useState<LaborRateSettings | null>(null);
   const [searchTemplates, setSearchTemplates] = useState("");
+  const [searchCategories, setSearchCategories] = useState("");
   const [searchMaterials, setSearchMaterials] = useState("");
   const [searchProcesses, setSearchProcesses] = useState("");
 
   // Modal state — Templates
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+
+  // Modal state — Categories
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
 
   // Modal state — Materials
   const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -175,7 +190,8 @@ export default function AdminPage() {
     try {
       const token = localStorage.getItem("access_token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const [tRes, mRes, pRes, uRes, lRes] = await Promise.all([
+      const [cRes, tRes, mRes, pRes, uRes, lRes] = await Promise.all([
+        axios.get(`${API_URL}/product-categories`),
         axios.get(`${API_URL}/templates`),
         axios.get(`${API_URL}/materials`),
         axios.get(`${API_URL}/processes`),
@@ -184,6 +200,9 @@ export default function AdminPage() {
           .get(`${API_URL}/settings/labor-rates`)
           .catch(() => ({ data: null })),
       ]);
+      setCategories(
+        [...cRes.data].sort((a, b) => a.sort_order - b.sort_order),
+      );
       setTemplates(
         [...tRes.data].sort((a, b) => a.name.localeCompare(b.name, "pl")),
       );
@@ -261,6 +280,39 @@ export default function AdminPage() {
         await axios.post(`${API_URL}/templates`, data);
       }
       setShowModal(false);
+      await fetchAll();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Błąd zapisu");
+    }
+  };
+
+  // ── Category CRUD ──
+  const openCreateCategory = () => {
+    setEditingCategory(null);
+    setShowCategoryModal(true);
+  };
+  const openEditCategory = (c: ProductCategory) => {
+    setEditingCategory(c);
+    setShowCategoryModal(true);
+  };
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm("Czy na pewno chcesz usunąć tę kategorię? (Spowoduje to odpięcie kategorii od szablonów)")) return;
+    try {
+      await axios.delete(`${API_URL}/product-categories/${id}`);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      await fetchAll();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Błąd usuwania");
+    }
+  };
+  const handleSaveCategory = async (data: any) => {
+    try {
+      if (editingCategory) {
+        await axios.put(`${API_URL}/product-categories/${editingCategory.id}`, data);
+      } else {
+        await axios.post(`${API_URL}/product-categories`, data);
+      }
+      setShowCategoryModal(false);
       await fetchAll();
     } catch (err: any) {
       alert(err.response?.data?.detail || "Błąd zapisu");
@@ -365,6 +417,7 @@ export default function AdminPage() {
 
   const allTabs: { id: TabId; label: string; count: number | null }[] = [
     { id: "templates", label: "Produkty", count: templates.length },
+    { id: "categories", label: "Kategorie", count: categories.length },
     { id: "materials", label: "Materiały", count: materials.length },
     { id: "processes", label: "Procesy", count: processes.length },
     { id: "users", label: "Użytkownicy", count: users.length },
@@ -505,6 +558,11 @@ export default function AdminPage() {
                                   {t.is_active ? "Aktywny" : "Nieaktywny"}
                                 </span>
                               </div>
+                              {t.category_id && categories.find(c => c.id === t.category_id) && (
+                                <div className="text-sm text-blue-600 mt-1 font-medium">
+                                  Kategoria: {categories.find(c => c.id === t.category_id)?.name}
+                                </div>
+                              )}
                               {t.description && (
                                 <p className="text-sm text-gray-500 mt-1">
                                   {t.description}
@@ -618,6 +676,138 @@ export default function AdminPage() {
                                 </svg>
                               </button>
                             </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Categories Tab */}
+            {activeTab === "categories" && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Kategorie produktów
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={searchCategories}
+                      onChange={(e) => setSearchCategories(e.target.value)}
+                      placeholder="Szukaj kategorii..."
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-52"
+                    />
+                    <button
+                      onClick={openCreateCategory}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Dodaj kategorię
+                    </button>
+                  </div>
+                </div>
+
+                {categories.length === 0 ? (
+                  <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
+                    <p className="text-gray-500">
+                      Brak kategorii. Kliknij &quot;Dodaj kategorię&quot; aby utworzyć pierwszą.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {categories
+                      .filter(
+                        (c) =>
+                          !searchCategories ||
+                          c.name
+                            .toLowerCase()
+                            .includes(searchCategories.toLowerCase()) ||
+                          c.description
+                            ?.toLowerCase()
+                            .includes(searchCategories.toLowerCase()),
+                      )
+                      .map((c) => (
+                        <div
+                          key={c.id}
+                          className="bg-white rounded-xl shadow-sm border p-6 flex items-center justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {c.name}
+                              </h3>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  c.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {c.is_active ? "Aktywna" : "Nieaktywna"}
+                              </span>
+                            </div>
+                            {c.description && (
+                              <p className="text-sm text-gray-500 mt-1">
+                                {c.description}
+                              </p>
+                            )}
+                            <div className="text-sm text-gray-400 mt-2">
+                              Kolejność: {c.sort_order}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openEditCategory(c)}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edytuj"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(c.id)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Usuń"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1317,10 +1507,20 @@ export default function AdminPage() {
         )}
       </div>
 
+      {/* Category Create/Edit Modal */}
+      {showCategoryModal && (
+        <CategoryModal
+          category={editingCategory}
+          onSave={handleSaveCategory}
+          onClose={() => setShowCategoryModal(false)}
+        />
+      )}
+
       {/* Template Create/Edit Modal */}
       {showModal && (
         <TemplateModal
           template={editingTemplate}
+          categories={categories}
           materials={materials}
           processes={processes}
           onSave={handleSaveTemplate}
@@ -1424,20 +1624,147 @@ export default function AdminPage() {
 }
 
 // ────────── Template Create/Edit Modal ──────────
+function CategoryModal({
+  category,
+  onSave,
+  onClose,
+}: {
+  category: ProductCategory | null;
+  onSave: (data: any) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(category?.name || "");
+  const [description, setDescription] = useState(category?.description || "");
+  const [sortOrder, setSortOrder] = useState(category?.sort_order || 0);
+  const [isActive, setIsActive] = useState(category?.is_active ?? true);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    await onSave({
+      name,
+      description: description || null,
+      sort_order: sortOrder,
+      is_active: isActive,
+    });
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {category ? "Edytuj kategorię" : "Nowa kategoria"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nazwa *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="np. Systemy Wystawiennicze"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Opis
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Opcjonalny opis..."
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kolejność sortowania
+              </label>
+              <input
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-center pt-7">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Aktywna</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="pt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+            >
+              Anuluj
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving ? "Zapisywanie..." : "Zapisz"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function TemplateModal({
   template,
+  categories,
   materials,
   processes,
   onSave,
   onClose,
 }: {
   template: Template | null;
+  categories: ProductCategory[];
   materials: Material[];
   processes: ProcessItem[];
   onSave: (data: any) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(template?.name || "");
+  const [categoryId, setCategoryId] = useState(
+    template?.category_id ? String(template.category_id) : ""
+  );
   const [description, setDescription] = useState(template?.description || "");
   const [marginW, setMarginW] = useState(
     String(template ? Number(template.default_margin_w_cm) : "0.5"),
@@ -1511,6 +1838,7 @@ function TemplateModal({
     setSaving(true);
 
     const payload: any = {
+      category_id: categoryId ? parseInt(categoryId) : null,
       name,
       description: description || null,
       default_margin_w_cm: parseFloat(marginW),
@@ -1582,6 +1910,23 @@ function TemplateModal({
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="np. Fototapeta Lateksowa"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kategoria
+              </label>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Wybierz kategorię...</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
