@@ -1030,8 +1030,9 @@ export default function Calculator() {
                               }}
                               className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
                            >
-                              <option value="MEDIUM">Standardowa</option>
-                              <option value="HARD">Wymagająca</option>
+                              <option value="EASY">Łatwa</option>
+                              <option value="MEDIUM">Średnia</option>
+                              <option value="HARD">Trudna</option>
                            </select>
                            <button
                              onClick={() => {
