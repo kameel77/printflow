@@ -351,6 +351,7 @@ class OfferVariant(Base):
     total_price_net = Column(Numeric(12, 2))
     total_price_gross = Column(Numeric(12, 2))
     calculation_snapshot = Column(JSON)
+    custom_config = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0)
     
     offer = relationship("Offer", back_populates="variants")

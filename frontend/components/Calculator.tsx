@@ -66,6 +66,17 @@ interface Template {
   }>;
 }
 
+interface Material {
+  id: number;
+  name: string;
+  category: string;
+}
+
+interface Process {
+  id: number;
+  name: string;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 export default function Calculator() {
@@ -100,6 +111,18 @@ export default function Calculator() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
 
+  // Ad-Hoc Product Mode
+  const [productMode, setProductMode] = useState<"CATALOG" | "ADHOC">("CATALOG");
+  const [adHocName, setAdHocName] = useState("Produkt Niestandardowy");
+  const [adHocMarginW, setAdHocMarginW] = useState("0");
+  const [adHocMarginH, setAdHocMarginH] = useState("0");
+  const [adHocOverlap, setAdHocOverlap] = useState("2.0");
+  const [adHocComponents, setAdHocComponents] = useState<any[]>([]);
+  const [adHocLabor, setAdHocLabor] = useState<any[]>([]);
+  
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
+
   // Fetch templates on mount
   useEffect(() => {
     fetchTemplates();
@@ -129,6 +152,30 @@ export default function Calculator() {
       if (d.selectedOptions) setSelectedOptions(d.selectedOptions);
       if (d.overlapOverride) setOverlapOverride(String(d.overlapOverride));
       if (d.adjustments) setAdjustments(d.adjustments);
+      
+      // Ad-Hoc restore
+      if (d.customConfig) {
+        setProductMode("ADHOC");
+        setAdHocName(d.customConfig.name || "Produkt Niestandardowy");
+        setAdHocMarginW(String(d.customConfig.default_margin_w_cm || 0));
+        setAdHocMarginH(String(d.customConfig.default_margin_h_cm || 0));
+        setAdHocOverlap(String(d.customConfig.default_overlap_cm || 2));
+        if (d.customConfig.components) {
+          setAdHocComponents(d.customConfig.components.map((c: any) => ({
+            id: c.material_id ? String(c.material_id) : String(c.process_id),
+            type: c.material_id ? "MATERIAL" : "PROCESS",
+            name: c.name
+          })));
+        }
+        if (d.customConfig.labor_entries) {
+          setAdHocLabor(d.customConfig.labor_entries.map((l: any) => ({
+            minutes: String(l.minutes),
+            difficulty: l.difficulty
+          })));
+        }
+      } else {
+        setProductMode("CATALOG");
+      }
     } catch (e) {
       console.error("Failed to restore offer state:", e);
     }
@@ -145,7 +192,7 @@ export default function Calculator() {
   }, [templateId]);
 
   // Helper: check if inputs are valid for calculation
-  const canCalculate = Boolean(
+  const canCalculate = productMode === "CATALOG" ? Boolean(
     templateId &&
     width &&
     parseFloat(width) > 0 &&
@@ -153,6 +200,15 @@ export default function Calculator() {
     parseFloat(height) > 0 &&
     quantity &&
     parseInt(quantity) > 0,
+  ) : Boolean(
+    adHocName.trim() &&
+    width &&
+    parseFloat(width) > 0 &&
+    height &&
+    parseFloat(height) > 0 &&
+    quantity &&
+    parseInt(quantity) > 0 &&
+    adHocComponents.length > 0,
   );
 
   // Auto-calculate when parameters change
@@ -177,13 +233,22 @@ export default function Calculator() {
     selectedOptions,
     canCalculate,
     adjustments,
+    productMode,
+    adHocName,
+    adHocMarginW,
+    adHocMarginH,
+    adHocOverlap,
+    adHocComponents,
+    adHocLabor,
   ]);
 
   const fetchTemplates = async () => {
     try {
-      const [tRes, cRes] = await Promise.all([
+      const [tRes, cRes, mRes, pRes] = await Promise.all([
         axios.get(`${API_URL}/calculate/templates`),
-        axios.get(`${API_URL}/product-categories`).catch(() => ({ data: [] }))
+        axios.get(`${API_URL}/product-categories`).catch(() => ({ data: [] })),
+        axios.get(`${API_URL}/materials`).catch(() => ({ data: [] })),
+        axios.get(`${API_URL}/processes`).catch(() => ({ data: [] }))
       ]);
       setTemplates(tRes.data.templates);
       setCategories(
@@ -191,6 +256,8 @@ export default function Calculator() {
           .filter(c => c.is_active)
           .sort((a, b) => a.sort_order - b.sort_order)
       );
+      setMaterials(mRes.data);
+      setProcesses(pRes.data);
     } catch (err) {
       console.error("Failed to fetch templates:", err);
       // Fallback templates
@@ -271,9 +338,30 @@ export default function Calculator() {
         width_cm: parseFloat(width),
         height_cm: parseFloat(height),
         quantity: parseInt(quantity),
-        template_id: parseInt(templateId),
         selected_options: selectedOptions,
       };
+
+      if (productMode === "CATALOG") {
+        payload.template_id = parseInt(templateId);
+      } else {
+        payload.ad_hoc_template = {
+          name: adHocName,
+          default_margin_w_cm: parseFloat(adHocMarginW) || 0,
+          default_margin_h_cm: parseFloat(adHocMarginH) || 0,
+          default_overlap_cm: parseFloat(adHocOverlap) || 2,
+          components: adHocComponents.map((c, i) => ({
+             id: i + 1,
+             material_id: c.type === 'MATERIAL' ? parseInt(c.id) : null,
+             process_id: c.type === 'PROCESS' ? parseInt(c.id) : null,
+             name: c.name,
+             is_required: true,
+          })),
+          labor_entries: adHocLabor.map(l => ({
+             minutes: parseFloat(l.minutes) || 0,
+             difficulty: l.difficulty
+          }))
+        };
+      }
 
       if (overlapOverride) {
         payload.overlap_override_cm = parseFloat(overlapOverride);
@@ -438,9 +526,9 @@ export default function Calculator() {
     });
 
     // Build the variant payload matching the expected API model
-    const payload = {
-      template_id: parseInt(templateId),
-      name: currentTemplate?.name || "Wariant",
+    const payload: any = {
+      template_id: productMode === "CATALOG" ? parseInt(templateId) : null,
+      name: productMode === "CATALOG" ? (currentTemplate?.name || "Wariant") : adHocName,
       is_recommended: false,
       width_cm: parseFloat(width),
       height_cm: parseFloat(height),
@@ -448,6 +536,23 @@ export default function Calculator() {
       total_price_net: finalTotalNet,
       total_price_gross: finalTotalGross,
       components,
+      custom_config: productMode === "ADHOC" ? {
+          name: adHocName,
+          default_margin_w_cm: parseFloat(adHocMarginW) || 0,
+          default_margin_h_cm: parseFloat(adHocMarginH) || 0,
+          default_overlap_cm: parseFloat(adHocOverlap) || 2,
+          components: adHocComponents.map((c, i) => ({
+             id: i + 1,
+             material_id: c.type === 'MATERIAL' ? parseInt(c.id) : null,
+             process_id: c.type === 'PROCESS' ? parseInt(c.id) : null,
+             name: c.name,
+             is_required: true,
+          })),
+          labor_entries: adHocLabor.map(l => ({
+             minutes: parseFloat(l.minutes) || 0,
+             difficulty: l.difficulty
+          }))
+      } : null,
       calculation_snapshot: {
         width,
         height,
@@ -476,6 +581,48 @@ export default function Calculator() {
         err.response?.data?.detail ||
           "Nie udało się dodać kalkulacji do oferty.",
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveToCatalog = async () => {
+    if (productMode !== "ADHOC") return;
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("access_token");
+      
+      const payload = {
+        name: adHocName,
+        description: "Produkt utworzony z kalkulatora (Ad-hoc)",
+        category_id: null,
+        is_active: true,
+        default_margin_w_cm: parseFloat(adHocMarginW) || 0,
+        default_margin_h_cm: parseFloat(adHocMarginH) || 0,
+        default_overlap_cm: parseFloat(adHocOverlap) || 2,
+        components: adHocComponents.map((c, i) => ({
+           material_id: c.type === 'MATERIAL' ? parseInt(c.id) : null,
+           process_id: c.type === 'PROCESS' ? parseInt(c.id) : null,
+           name: c.name,
+           is_required: true,
+        })),
+        labor_entries: adHocLabor.map(l => ({
+           minutes: parseFloat(l.minutes) || 0,
+           difficulty: l.difficulty
+        }))
+      };
+
+      await axios.post(`${API_URL}/templates`, payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      
+      alert("Produkt został zapisany w katalogu. Możesz go teraz wybrać.");
+      await fetchTemplates();
+      setProductMode("CATALOG");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.detail || "Nie udało się zapisać produktu w katalogu.");
     } finally {
       setLoading(false);
     }
@@ -562,6 +709,16 @@ export default function Calculator() {
                   ? "Zaktualizuj ofertę"
                   : "Stwórz ofertę"}
             </button>
+
+            {productMode === "ADHOC" && (
+              <button
+                onClick={handleSaveToCatalog}
+                disabled={loading || !canCalculate}
+                className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                Zapisz jako produkt
+              </button>
+            )}
 
             <button
               onClick={handleCalculate}
@@ -651,48 +808,140 @@ export default function Calculator() {
               </h2>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Wybierz kategorię
-                    </label>
-                    <select
-                      value={categoryId}
-                      onChange={(e) => {
-                        setCategoryId(e.target.value);
-                        setTemplateId("");
-                      }}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!categoryId ? "text-gray-400" : ""}`}
-                    >
-                      <option value="">Wszystkie kategorie</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Wybierz produkt
-                    </label>
-                    <select
-                      value={templateId}
-                      onChange={(e) => setTemplateId(e.target.value)}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? "text-gray-400" : ""}`}
-                    >
-                      <option value="">Wybierz produkt...</option>
-                      {templates
-                        .filter(t => !categoryId || String(t.category_id) === categoryId)
-                        .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                  <button
+                    onClick={() => setProductMode("CATALOG")}
+                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      productMode === "CATALOG"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Z katalogu
+                  </button>
+                  <button
+                    onClick={() => setProductMode("ADHOC")}
+                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      productMode === "ADHOC"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Niestandardowy (Ad-hoc)
+                  </button>
                 </div>
+
+                {productMode === "CATALOG" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Wybierz kategorię
+                      </label>
+                      <select
+                        value={categoryId}
+                        onChange={(e) => {
+                          setCategoryId(e.target.value);
+                          setTemplateId("");
+                        }}
+                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!categoryId ? "text-gray-400" : ""}`}
+                      >
+                        <option value="">Wszystkie kategorie</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Wybierz produkt
+                      </label>
+                      <select
+                        value={templateId}
+                        onChange={(e) => setTemplateId(e.target.value)}
+                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? "text-gray-400" : ""}`}
+                      >
+                        <option value="">Wybierz produkt...</option>
+                        {templates
+                          .filter(t => !categoryId || String(t.category_id) === categoryId)
+                          .map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nazwa produktu
+                      </label>
+                      <input
+                        type="text"
+                        value={adHocName}
+                        onChange={(e) => setAdHocName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Np. Baner reklamowy"
+                      />
+                    </div>
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                      <h3 className="text-sm font-medium text-gray-800">Składniki wyceny</h3>
+                      {adHocComponents.map((comp, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            value={`${comp.type}:${comp.id}`}
+                            onChange={(e) => {
+                              const [type, id] = e.target.value.split(":");
+                              const list = type === "MATERIAL" ? materials : processes;
+                              const item = list.find(l => String(l.id) === id);
+                              if (item) {
+                                const newComps = [...adHocComponents];
+                                newComps[idx] = { type, id, name: item.name };
+                                setAdHocComponents(newComps);
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                          >
+                            <optgroup label="Materiały">
+                              {materials.map(m => (
+                                <option key={`MATERIAL:${m.id}`} value={`MATERIAL:${m.id}`}>{m.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Procesy">
+                              {processes.map(p => (
+                                <option key={`PROCESS:${p.id}`} value={`PROCESS:${p.id}`}>{p.name}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                          <button
+                            onClick={() => {
+                              const newComps = [...adHocComponents];
+                              newComps.splice(idx, 1);
+                              setAdHocComponents(newComps);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-2"
+                          >
+                            Usuń
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          if (materials.length > 0) {
+                            setAdHocComponents([...adHocComponents, { type: "MATERIAL", id: String(materials[0].id), name: materials[0].name }]);
+                          }
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2"
+                      >
+                        + Dodaj materiał / proces
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>

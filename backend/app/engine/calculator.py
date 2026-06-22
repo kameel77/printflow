@@ -372,7 +372,10 @@ class PrintFlowEngine:
     
     def run(self, req: CalculationRequest) -> CalculationResponse:
         """Main calculation entry point"""
-        template = self.db.get('templates', {}).get(req.template_id) if req.template_id else None
+        if req.ad_hoc_template:
+            template = req.ad_hoc_template.model_dump()
+        else:
+            template = self.db.get('templates', {}).get(req.template_id) if req.template_id else None
         
         # Resolve overlap
         if req.overlap_override_cm is not None:

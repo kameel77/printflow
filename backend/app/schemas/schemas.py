@@ -266,14 +266,37 @@ class ProductTemplateResponse(ProductTemplateBase):
         from_attributes = True
 
 
+# Ad-Hoc Templates
+class AdHocComponent(BaseModel):
+    id: int
+    material_id: Optional[int] = None
+    process_id: Optional[int] = None
+    name: Optional[str] = None
+    is_required: bool = True
+
+class AdHocLaborEntry(BaseModel):
+    minutes: float
+    difficulty: str
+
+class AdHocTemplateInput(BaseModel):
+    name: str
+    default_margin_w_cm: float = 0.0
+    default_margin_h_cm: float = 0.0
+    default_overlap_cm: float = 2.0
+    components: List[AdHocComponent] = []
+    labor_entries: List[AdHocLaborEntry] = []
+
+
 # Calculation Schemas
 class CalculationRequest(BaseModel):
     width_cm: float = Field(..., gt=0)
     height_cm: float = Field(..., gt=0)
     quantity: int = Field(..., gt=0)
     template_id: Optional[int] = None
+    ad_hoc_template: Optional[AdHocTemplateInput] = None
     selected_options: List[int] = []
     overlap_override_cm: Optional[float] = None
+
 
 
 class ComponentResult(BaseModel):
@@ -346,6 +369,7 @@ class QuoteItemBase(BaseModel):
     height_cm: Decimal
     quantity: int = 1
     template_id: Optional[int] = None
+    custom_config: Optional[Dict[str, Any]] = None
 
 
 class QuoteItemCreate(QuoteItemBase):
@@ -480,6 +504,7 @@ class OfferVariantBase(BaseModel):
     total_price_net: Decimal
     total_price_gross: Decimal
     calculation_snapshot: Optional[Dict[str, Any]] = None
+    custom_config: Optional[Dict[str, Any]] = None
     sort_order: int = 0
 
 

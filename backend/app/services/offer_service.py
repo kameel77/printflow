@@ -223,6 +223,7 @@ async def update_offer(
                 total_price_net=v_data.total_price_net,
                 total_price_gross=v_data.total_price_gross,
                 calculation_snapshot=v_data.calculation_snapshot,
+                custom_config=v_data.custom_config,
                 sort_order=v_data.sort_order,
             )
             db.add(variant)
@@ -266,6 +267,7 @@ async def add_variant_to_offer(
         total_price_net=v_data.total_price_net,
         total_price_gross=v_data.total_price_gross,
         calculation_snapshot=v_data.calculation_snapshot,
+        custom_config=v_data.custom_config,
         sort_order=v_data.sort_order if v_data.sort_order is not None else next_order,
     )
     db.add(variant)
