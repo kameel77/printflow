@@ -235,6 +235,39 @@ export default function AdminPage() {
     }
   };
 
+  const handleDuplicateTemplate = async (template: Template) => {
+    try {
+      // Przygotowujemy dane do duplikacji, usuwając oryginalne id
+      const duplicatedData = {
+        category_id: template.category_id,
+        name: `${template.name} - duplikat`,
+        description: template.description,
+        default_margin_w_cm: template.default_margin_w_cm,
+        default_margin_h_cm: template.default_margin_h_cm,
+        default_overlap_cm: template.default_overlap_cm,
+        max_bryt_width_cm: template.max_bryt_width_cm,
+        sale_price_per_m2: template.sale_price_per_m2,
+        is_active: template.is_active,
+        tooltip_margin_w_cm: template.tooltip_margin_w_cm,
+        tooltip_margin_h_cm: template.tooltip_margin_h_cm,
+        tooltip_overlap_cm: template.tooltip_overlap_cm,
+        components: template.components.map(c => {
+          const { id, template_id, ...rest } = c;
+          return rest;
+        }),
+        labor_entries: template.labor_entries.map(l => {
+          const { id, ...rest } = l;
+          return rest;
+        })
+      };
+
+      const res = await axios.post(`${API_URL}/templates/`, duplicatedData);
+      setTemplates((prev) => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name, "pl")));
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Błąd podczas duplikowania szablonu");
+    }
+  };
+
   const handleDeleteMaterial = async (id: number) => {
     if (!confirm("Czy na pewno chcesz usunąć ten materiał?")) return;
     try {
@@ -637,6 +670,25 @@ export default function AdminPage() {
                             </div>
 
                             <div className="flex items-center gap-2 ml-4">
+                              <button
+                                onClick={() => handleDuplicateTemplate(t)}
+                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Duplikuj"
+                              >
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+                                  />
+                                </svg>
+                              </button>
                               <button
                                 onClick={() => openEditTemplate(t)}
                                 className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
