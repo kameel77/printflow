@@ -372,7 +372,10 @@ class PrintFlowEngine:
     
     def run(self, req: CalculationRequest) -> CalculationResponse:
         """Main calculation entry point"""
-        template = self.db.get('templates', {}).get(req.template_id) if req.template_id else None
+        if req.ad_hoc_template:
+            template = req.ad_hoc_template.model_dump()
+        else:
+            template = self.db.get('templates', {}).get(req.template_id) if req.template_id else None
         
         # Resolve overlap
         if req.overlap_override_cm is not None:
@@ -547,7 +550,7 @@ class PrintFlowEngine:
                 label = difficulty_labels.get(difficulty, difficulty)
                 self.log(f"Robocizna ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN")
                 tech_view.append(ComponentResult(
-                    name=f"Robocizna — {label}",
+                    name=f"Robocizna - {label}",
                     type="LABOR",
                     qty=float(minutes_val),
                     unit="min",

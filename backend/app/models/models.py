@@ -112,10 +112,23 @@ class Process(Base):
     labor_entries = relationship("ProcessLaborEntry", back_populates="process", cascade="all, delete-orphan", order_by="ProcessLaborEntry.sort_order")
 
 
+class ProductCategory(Base):
+    __tablename__ = "product_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
+    templates = relationship("ProductTemplate", back_populates="category")
+
+
 class ProductTemplate(Base):
     __tablename__ = "product_templates"
     
     id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("product_categories.id"))
     name = Column(String(255), nullable=False)
     description = Column(Text)
     default_margin_w_cm = Column(Numeric(10, 2), default=Decimal("0.0"))
@@ -130,6 +143,7 @@ class ProductTemplate(Base):
     tooltip_margin_h_cm = Column(String(500))
     tooltip_overlap_cm = Column(String(500))
 
+    category = relationship("ProductCategory", back_populates="templates")
     components = relationship("TemplateComponent", back_populates="template", cascade="all, delete-orphan")
     labor_entries = relationship("TemplateLaborEntry", back_populates="template", cascade="all, delete-orphan", order_by="TemplateLaborEntry.sort_order")
 
@@ -337,6 +351,7 @@ class OfferVariant(Base):
     total_price_net = Column(Numeric(12, 2))
     total_price_gross = Column(Numeric(12, 2))
     calculation_snapshot = Column(JSON)
+    custom_config = Column(JSON, nullable=True)
     sort_order = Column(Integer, default=0)
     
     offer = relationship("Offer", back_populates="variants")

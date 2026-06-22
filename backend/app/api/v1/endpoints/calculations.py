@@ -181,6 +181,7 @@ async def list_templates_for_calculator(
                 "id": t.id,
                 "name": t.name,
                 "description": t.description or f"Szablon z {len(t.components)} komponentami",
+                "category_id": t.category_id,
             }
             for t in templates
         ]

@@ -26,6 +26,7 @@ async def list_templates(
     result = await db.execute(
         select(ProductTemplate)
         .options(
+            selectinload(ProductTemplate.category),
             selectinload(ProductTemplate.components),
             selectinload(ProductTemplate.labor_entries),
         )
@@ -42,6 +43,7 @@ async def create_template(
 ):
     """Create new product template"""
     db_template = ProductTemplate(
+        category_id=template.category_id,
         name=template.name,
         description=template.description,
         default_margin_w_cm=template.default_margin_w_cm,
@@ -74,6 +76,7 @@ async def get_template(
     result = await db.execute(
         select(ProductTemplate)
         .options(
+            selectinload(ProductTemplate.category),
             selectinload(ProductTemplate.components),
             selectinload(ProductTemplate.labor_entries),
         )
@@ -95,6 +98,7 @@ async def update_template(
     result = await db.execute(
         select(ProductTemplate)
         .options(
+            selectinload(ProductTemplate.category),
             selectinload(ProductTemplate.components),
             selectinload(ProductTemplate.labor_entries),
         )
