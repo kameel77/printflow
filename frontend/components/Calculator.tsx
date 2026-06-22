@@ -443,6 +443,13 @@ export default function Calculator() {
     selectedOptions,
     canCalculate,
     adjustments,
+    productMode,
+    adHocName,
+    adHocMarginW,
+    adHocMarginH,
+    adHocOverlap,
+    adHocComponents,
+    adHocLabor,
   ]);
 
   const formatCurrency = (value: number) => {
