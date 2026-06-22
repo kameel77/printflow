@@ -1,9 +1,5 @@
-import AuthWrapper from '@/components/AuthWrapper'
+import AuthWrapper from "@/components/AuthWrapper";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <AuthWrapper>{children}</AuthWrapper>
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return <AuthWrapper>{children}</AuthWrapper>;
 }

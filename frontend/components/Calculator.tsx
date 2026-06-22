@@ -1,221 +1,250 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { useAuth } from '@/components/AuthProvider'
-import Header from '@/components/Header'
+import Image from "next/image";
+import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useAuth } from "@/components/AuthProvider";
+import Header from "@/components/Header";
 
 interface CalculationResult {
-  total_price_net: number
-  total_cost_cogs: number
-  margin_percentage: number
-  sale_price_per_m2?: number | null
-  gross_dimensions: { width: number; height: number }
-  is_split: boolean
-  num_panels: number
-  overlap_used_cm: number
+  total_price_net: number;
+  total_cost_cogs: number;
+  margin_percentage: number;
+  sale_price_per_m2?: number | null;
+  gross_dimensions: { width: number; height: number };
+  is_split: boolean;
+  num_panels: number;
+  overlap_used_cm: number;
   client_view: Array<{
-    desc: string
-    qty: number
-    total: number
-  }>
+    desc: string;
+    qty: number;
+    total: number;
+  }>;
   tech_view: Array<{
-    name: string
-    type: string
-    qty: number
-    unit: string
-    price_net: number
-    details: string
-    is_rotated?: boolean
-  }>
+    name: string;
+    type: string;
+    qty: number;
+    unit: string;
+    price_net: number;
+    details: string;
+    is_rotated?: boolean;
+  }>;
   panel_methods?: Array<{
-    method: string
+    method: string;
     panels: Array<{
-      width_cm: number
-      height_cm: number
-      quantity: number
-    }>
-    total_waste_m2: number
-    num_panels: number
-  }>
-  debug?: string[]
+      width_cm: number;
+      height_cm: number;
+      quantity: number;
+    }>;
+    total_waste_m2: number;
+    num_panels: number;
+  }>;
+  debug?: string[];
 }
 
 interface Template {
-  id: number
-  name: string
-  description: string
-  sale_price_per_m2?: number | null
+  id: number;
+  name: string;
+  description: string;
+  sale_price_per_m2?: number | null;
   components?: Array<{
-    id: number
-    name: string
-    is_required: boolean
-    type: 'MATERIAL' | 'PROCESS'
-  }>
+    id: number;
+    name: string;
+    is_required: boolean;
+    type: "MATERIAL" | "PROCESS";
+  }>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 export default function Calculator() {
-  const { user, logout } = useAuth()
-  const router = useRouter()
+  const { user, logout } = useAuth();
+  const router = useRouter();
   // Input parameters
-  const [width, setWidth] = useState<string>('')
-  const [height, setHeight] = useState<string>('')
-  const [quantity, setQuantity] = useState<string>('1')
-  const [templateId, setTemplateId] = useState<string>('')
-  const [overlapOverride, setOverlapOverride] = useState<string>('')
-  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
+  const [width, setWidth] = useState<string>("");
+  const [height, setHeight] = useState<string>("");
+  const [quantity, setQuantity] = useState<string>("1");
+  const [templateId, setTemplateId] = useState<string>("");
+  const [overlapOverride, setOverlapOverride] = useState<string>("");
+  const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
   interface Adjustment {
-    id: string
-    desc: string
-    type: 'amount' | 'percentage'
-    value: string
+    id: string;
+    desc: string;
+    type: "amount" | "percentage";
+    value: string;
   }
-  const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>('B2C')
-  const [adjustments, setAdjustments] = useState<Adjustment[]>([])
-  const [productionDetailsOpen, setProductionDetailsOpen] = useState(false)
-  const [techDetailsOpen, setTechDetailsOpen] = useState(true)
-  const [activeOfferId, setActiveOfferId] = useState<string | null>(null)
-  const [isEditingOffer, setIsEditingOffer] = useState(false)
+  const [customerType, setCustomerType] = useState<"B2C" | "B2B">("B2C");
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [productionDetailsOpen, setProductionDetailsOpen] = useState(false);
+  const [techDetailsOpen, setTechDetailsOpen] = useState(true);
+  const [activeOfferId, setActiveOfferId] = useState<string | null>(null);
+  const [isEditingOffer, setIsEditingOffer] = useState(false);
 
   // State
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<CalculationResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [templates, setTemplates] = useState<Template[]>([])
-  const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null)
-
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
 
   // Fetch templates on mount
   useEffect(() => {
-    fetchTemplates()
-    
+    fetchTemplates();
+
     // Check if we are adding a variant to an existing offer
-    const search = new URLSearchParams(window.location.search)
-    setActiveOfferId(search.get('offerId'))
-    
+    const search = new URLSearchParams(window.location.search);
+    setActiveOfferId(search.get("offerId"));
+
     // Check if we are editing an offer
-    setIsEditingOffer(Boolean(sessionStorage.getItem('editingOfferId')))
-  }, [])
+    setIsEditingOffer(Boolean(sessionStorage.getItem("editingOfferId")));
+  }, []);
 
   // Restore state when editing a draft offer (triggered after templates load)
   useEffect(() => {
-    if (templates.length === 0) return // wait for templates
-    const stored = sessionStorage.getItem('editOfferCalculation')
-    if (!stored) return
+    if (templates.length === 0) return; // wait for templates
+    const stored = sessionStorage.getItem("editOfferCalculation");
+    if (!stored) return;
     try {
-      const d = JSON.parse(stored)
-      sessionStorage.removeItem('editOfferCalculation')
-      if (d.templateId) setTemplateId(String(d.templateId))
-      if (d.width) setWidth(String(d.width))
-      if (d.height) setHeight(String(d.height))
-      if (d.quantity) setQuantity(String(d.quantity))
-      if (d.customerType) setCustomerType(d.customerType)
-      if (d.selectedOptions) setSelectedOptions(d.selectedOptions)
-      if (d.overlapOverride) setOverlapOverride(String(d.overlapOverride))
-      if (d.adjustments) setAdjustments(d.adjustments)
+      const d = JSON.parse(stored);
+      sessionStorage.removeItem("editOfferCalculation");
+      if (d.templateId) setTemplateId(String(d.templateId));
+      if (d.width) setWidth(String(d.width));
+      if (d.height) setHeight(String(d.height));
+      if (d.quantity) setQuantity(String(d.quantity));
+      if (d.customerType) setCustomerType(d.customerType);
+      if (d.selectedOptions) setSelectedOptions(d.selectedOptions);
+      if (d.overlapOverride) setOverlapOverride(String(d.overlapOverride));
+      if (d.adjustments) setAdjustments(d.adjustments);
     } catch (e) {
-      console.error('Failed to restore offer state:', e)
+      console.error("Failed to restore offer state:", e);
     }
-  }, [templates])
+  }, [templates]);
 
   // Fetch template details when templateId changes
   useEffect(() => {
     if (templateId) {
-      fetchTemplateDetails(parseInt(templateId))
+      fetchTemplateDetails(parseInt(templateId));
       // Don't reset selectedOptions here if we're restoring from an edit
     } else {
-      setCurrentTemplate(null)
+      setCurrentTemplate(null);
     }
-  }, [templateId])
+  }, [templateId]);
 
   // Helper: check if inputs are valid for calculation
   const canCalculate = Boolean(
     templateId &&
-    width && parseFloat(width) > 0 &&
-    height && parseFloat(height) > 0 &&
-    quantity && parseInt(quantity) > 0
-  )
+    width &&
+    parseFloat(width) > 0 &&
+    height &&
+    parseFloat(height) > 0 &&
+    quantity &&
+    parseInt(quantity) > 0,
+  );
 
   // Auto-calculate when parameters change
   useEffect(() => {
     if (canCalculate) {
       const timeoutId = setTimeout(() => {
-        handleCalculate()
-      }, 500)
-      return () => clearTimeout(timeoutId)
+        handleCalculate();
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
     // Clear result when inputs become invalid
     if (!canCalculate) {
-      setResult(null)
-      setError(null)
+      setResult(null);
+      setError(null);
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate, adjustments])
+  }, [
+    width,
+    height,
+    quantity,
+    templateId,
+    overlapOverride,
+    selectedOptions,
+    canCalculate,
+    adjustments,
+  ]);
 
   const fetchTemplates = async () => {
     try {
-      const response = await axios.get(`${API_URL}/calculate/templates`)
-      setTemplates(response.data.templates)
+      const response = await axios.get(`${API_URL}/calculate/templates`);
+      setTemplates(response.data.templates);
     } catch (err) {
-      console.error('Failed to fetch templates:', err)
+      console.error("Failed to fetch templates:", err);
       // Fallback templates
       setTemplates([
-        { id: 1, name: 'Fototapeta Lateksowa', description: 'Standardowa fototapeta' },
-        { id: 2, name: 'Tablica Magnetyczna', description: 'Tablica z folią magnetyczną' }
-      ])
+        {
+          id: 1,
+          name: "Fototapeta Lateksowa",
+          description: "Standardowa fototapeta",
+        },
+        {
+          id: 2,
+          name: "Tablica Magnetyczna",
+          description: "Tablica z folią magnetyczną",
+        },
+      ]);
     }
-  }
+  };
 
   const fetchTemplateDetails = async (id: number) => {
     try {
-      const response = await axios.get(`${API_URL}/calculate/templates/${id}`)
-      setCurrentTemplate(response.data)
+      const response = await axios.get(`${API_URL}/calculate/templates/${id}`);
+      setCurrentTemplate(response.data);
     } catch (err) {
-      console.error('Failed to fetch template details:', err)
+      console.error("Failed to fetch template details:", err);
       // Fallback - use mock data based on template ID
       if (id === 1) {
         setCurrentTemplate({
           id: 1,
-          name: 'Fototapeta Lateksowa',
-          description: 'Standardowa fototapeta',
+          name: "Fototapeta Lateksowa",
+          description: "Standardowa fototapeta",
           components: [
-            { id: 1, name: 'Papier Lateksowy', is_required: true, type: 'MATERIAL' },
-            { id: 2, name: 'Cięcie CNC', is_required: true, type: 'PROCESS' }
-          ]
-        })
+            {
+              id: 1,
+              name: "Papier Lateksowy",
+              is_required: true,
+              type: "MATERIAL",
+            },
+            { id: 2, name: "Cięcie CNC", is_required: true, type: "PROCESS" },
+          ],
+        });
       } else if (id === 2) {
         setCurrentTemplate({
           id: 2,
-          name: 'Tablica Magnetyczna',
-          description: 'Tablica z folią magnetyczną',
+          name: "Tablica Magnetyczna",
+          description: "Tablica z folią magnetyczną",
           components: [
-            { id: 3, name: 'Folia Magnetyczna', is_required: true, type: 'MATERIAL' },
-            { id: 4, name: 'Laminowanie', is_required: false, type: 'PROCESS' },
-            { id: 5, name: 'Cięcie CNC', is_required: true, type: 'PROCESS' }
-          ]
-        })
+            {
+              id: 3,
+              name: "Folia Magnetyczna",
+              is_required: true,
+              type: "MATERIAL",
+            },
+            { id: 4, name: "Laminowanie", is_required: false, type: "PROCESS" },
+            { id: 5, name: "Cięcie CNC", is_required: true, type: "PROCESS" },
+          ],
+        });
       }
     }
-  }
+  };
 
   const handleOptionToggle = (optionId: number) => {
-    setSelectedOptions(prev => {
+    setSelectedOptions((prev) => {
       if (prev.includes(optionId)) {
-        return prev.filter(id => id !== optionId)
+        return prev.filter((id) => id !== optionId);
       }
-      return [...prev, optionId]
-    })
-  }
+      return [...prev, optionId];
+    });
+  };
 
   const handleCalculate = useCallback(async () => {
-    if (!canCalculate) return
+    if (!canCalculate) return;
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const payload: any = {
@@ -224,149 +253,174 @@ export default function Calculator() {
         quantity: parseInt(quantity),
         template_id: parseInt(templateId),
         selected_options: selectedOptions,
-      }
+      };
 
       if (overlapOverride) {
-        payload.overlap_override_cm = parseFloat(overlapOverride)
+        payload.overlap_override_cm = parseFloat(overlapOverride);
       }
 
-      const response = await axios.post(`${API_URL}/calculate`, payload)
-      setResult(response.data)
+      const response = await axios.post(`${API_URL}/calculate`, payload);
+      setResult(response.data);
 
       if (response.data.debug && Array.isArray(response.data.debug)) {
-        console.group('✅ KALKULACJA OK — logi silnika:')
-        response.data.debug.forEach((log: string) => console.log(`[CALC] ${log}`))
-        console.groupEnd()
+        console.group("✅ KALKULACJA OK — logi silnika:");
+        response.data.debug.forEach((log: string) =>
+          console.log(`[CALC] ${log}`),
+        );
+        console.groupEnd();
       }
 
       // Log panel methods (standard vs wycena_masowa)
-      if (response.data.panel_methods && response.data.panel_methods.length > 0) {
-        console.group('📐 METODY KALKULACJI BRYTÓW')
+      if (
+        response.data.panel_methods &&
+        response.data.panel_methods.length > 0
+      ) {
+        console.group("📐 METODY KALKULACJI BRYTÓW");
         response.data.panel_methods.forEach((pm: any) => {
           const labelMap: Record<string, string> = {
-            standard: '📏 METODA STANDARDOWA (bryty równej szerokości)',
-            wycena_masowa: '💰 WYCENA MASOWA (minimalizacja odpadów)',
-            efektywna: '🎯 METODA EFEKTYWNA (optymalny dobór rolki)',
-          }
-          const label = labelMap[pm.method] ?? pm.method
-          console.group(label)
+            standard: "📏 METODA STANDARDOWA (bryty równej szerokości)",
+            wycena_masowa: "💰 WYCENA MASOWA (minimalizacja odpadów)",
+            efektywna: "🎯 METODA EFEKTYWNA (optymalny dobór rolki)",
+          };
+          const label = labelMap[pm.method] ?? pm.method;
+          console.group(label);
           pm.panels.forEach((p: any) => {
-            console.log(`  Ilość: ${p.quantity}, Rozmiar: ${p.width_cm.toFixed(1)}×${p.height_cm.toFixed(1)} cm`)
-          })
-          console.log(`  Łączna liczba brytów: ${pm.num_panels}`)
-          console.log(`  Odpad: ${pm.total_waste_m2.toFixed(2)} m²`)
-          console.groupEnd()
-        })
-        console.groupEnd()
+            console.log(
+              `  Ilość: ${p.quantity}, Rozmiar: ${p.width_cm.toFixed(1)}×${p.height_cm.toFixed(1)} cm`,
+            );
+          });
+          console.log(`  Łączna liczba brytów: ${pm.num_panels}`);
+          console.log(`  Odpad: ${pm.total_waste_m2.toFixed(2)} m²`);
+          console.groupEnd();
+        });
+        console.groupEnd();
       }
     } catch (err: any) {
-      const detail = err.response?.data?.detail
+      const detail = err.response?.data?.detail;
 
       // Handle structured error with debug logs and traceback
-      if (detail && typeof detail === 'object' && detail.debug) {
-        console.group('🔴 BŁĄD KALKULACJI')
-        console.error('Komunikat:', detail.message)
+      if (detail && typeof detail === "object" && detail.debug) {
+        console.group("🔴 BŁĄD KALKULACJI");
+        console.error("Komunikat:", detail.message);
         if (detail.debug && Array.isArray(detail.debug)) {
-          console.group('[CALC] Logi silnika (do momentu błędu):')
-          detail.debug.forEach((log: string) => console.log(`[CALC] ${log}`))
-          console.groupEnd()
+          console.group("[CALC] Logi silnika (do momentu błędu):");
+          detail.debug.forEach((log: string) => console.log(`[CALC] ${log}`));
+          console.groupEnd();
         }
         if (detail.traceback) {
-          console.group('Python Traceback:')
-          console.error(detail.traceback)
-          console.groupEnd()
+          console.group("Python Traceback:");
+          console.error(detail.traceback);
+          console.groupEnd();
         }
-        console.groupEnd()
-        setError(detail.message || 'Wystąpił błąd podczas kalkulacji')
+        console.groupEnd();
+        setError(detail.message || "Wystąpił błąd podczas kalkulacji");
       } else {
         // Simple string error
-        const errorMsg = typeof detail === 'string' ? detail : 'Wystąpił błąd podczas kalkulacji'
-        console.error('Błąd kalkulacji:', errorMsg)
-        setError(errorMsg)
+        const errorMsg =
+          typeof detail === "string"
+            ? detail
+            : "Wystąpił błąd podczas kalkulacji";
+        console.error("Błąd kalkulacji:", errorMsg);
+        setError(errorMsg);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [width, height, quantity, templateId, overlapOverride, selectedOptions, canCalculate, adjustments])
+  }, [
+    width,
+    height,
+    quantity,
+    templateId,
+    overlapOverride,
+    selectedOptions,
+    canCalculate,
+    adjustments,
+  ]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-      minimumFractionDigits: 2
-    }).format(value)
-  }
+    return new Intl.NumberFormat("pl-PL", {
+      style: "currency",
+      currency: "PLN",
+      minimumFractionDigits: 2,
+    }).format(value);
+  };
 
-  const VAT_RATE = 1.23
+  const VAT_RATE = 1.23;
 
   // Base calculated totals from result
-  const baseTotalNet = result?.total_price_net || 0
-  const totalCostCogs = result?.total_cost_cogs || 0
+  const baseTotalNet = result?.total_price_net || 0;
+  const totalCostCogs = result?.total_cost_cogs || 0;
 
-  let totalAdjustmentNet = 0
-  adjustments.forEach(adj => {
-    const val = parseFloat(adj.value.replace(',', '.'))
+  let totalAdjustmentNet = 0;
+  adjustments.forEach((adj) => {
+    const val = parseFloat(adj.value.replace(",", "."));
     if (!isNaN(val) && val !== 0) {
-      if (adj.type === 'amount') {
-        totalAdjustmentNet += val
-      } else if (adj.type === 'percentage') {
-        totalAdjustmentNet += baseTotalNet * (val / 100)
+      if (adj.type === "amount") {
+        totalAdjustmentNet += val;
+      } else if (adj.type === "percentage") {
+        totalAdjustmentNet += baseTotalNet * (val / 100);
       }
     }
-  })
+  });
 
   // Applied adjustment applies directly to Net price
-  const adjustedTotalNet = baseTotalNet + totalAdjustmentNet
-  const finalTotalNet = Math.max(0, adjustedTotalNet) // Ensure total doesn't go below 0
+  const adjustedTotalNet = baseTotalNet + totalAdjustmentNet;
+  const finalTotalNet = Math.max(0, adjustedTotalNet); // Ensure total doesn't go below 0
 
-  const finalTotalGross = finalTotalNet * VAT_RATE
+  const finalTotalGross = finalTotalNet * VAT_RATE;
 
   // Margin based on adjusted net revenue
-  const absoluteMargin = finalTotalNet - totalCostCogs
-  const finalMarginPercentage = finalTotalNet > 0 ? (absoluteMargin / finalTotalNet) * 100 : 0
+  const absoluteMargin = finalTotalNet - totalCostCogs;
+  const finalMarginPercentage =
+    finalTotalNet > 0 ? (absoluteMargin / finalTotalNet) * 100 : 0;
 
-  const MIN_ORDER_VALUE = parseFloat(process.env.NEXT_PUBLIC_MIN_ORDER_VALUE || '40')
-  const currentTotal = customerType === 'B2C' ? finalTotalGross : finalTotalNet
+  const MIN_ORDER_VALUE = parseFloat(
+    process.env.NEXT_PUBLIC_MIN_ORDER_VALUE || "40",
+  );
+  const currentTotal = customerType === "B2C" ? finalTotalGross : finalTotalNet;
 
   // Get required and optional components
-  const requiredComponents = currentTemplate?.components?.filter(c => c.is_required) || []
-  const optionalComponents = currentTemplate?.components?.filter(c => !c.is_required) || []
+  const requiredComponents =
+    currentTemplate?.components?.filter((c) => c.is_required) || [];
+  const optionalComponents =
+    currentTemplate?.components?.filter((c) => !c.is_required) || [];
 
   // Add Variant directly to existing offer
   const handleAddVariantToOffer = async () => {
-    if (!result || !activeOfferId) return
-    
+    if (!result || !activeOfferId) return;
+
     // Build components array matching the new offer flow
     const components: any[] = result.tech_view.map((tv: any) => ({
-        name_snapshot: tv.name,
-        type: tv.type,
-        quantity: tv.qty,
-        unit: tv.unit,
-        unit_price: tv.price_net / (tv.qty || 1),
-        total_price: tv.price_net,
-        visible_to_client: true,
-    }))
+      name_snapshot: tv.name,
+      type: tv.type,
+      quantity: tv.qty,
+      unit: tv.unit,
+      unit_price: tv.price_net / (tv.qty || 1),
+      total_price: tv.price_net,
+      visible_to_client: true,
+    }));
 
     // Add adjustments as components
     adjustments.forEach((adj) => {
-        const val = parseFloat(adj.value.replace(',', '.'))
-        if (isNaN(val) || val === 0) return
-        const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
-        components.push({
-            name_snapshot: adj.desc || 'Korekta wyceny',
-            type: 'ADJUSTMENT',
-            quantity: null,
-            unit: null,
-            unit_price: null,
-            total_price: amountNet,
-            visible_to_client: true,
-        })
-    })
+      const val = parseFloat(adj.value.replace(",", "."));
+      if (isNaN(val) || val === 0) return;
+      const amountNet =
+        adj.type === "amount" ? val : baseTotalNet * (val / 100);
+      components.push({
+        name_snapshot: adj.desc || "Korekta wyceny",
+        type: "ADJUSTMENT",
+        quantity: null,
+        unit: null,
+        unit_price: null,
+        total_price: amountNet,
+        visible_to_client: true,
+      });
+    });
 
     // Build the variant payload matching the expected API model
     const payload = {
       template_id: parseInt(templateId),
-      name: currentTemplate?.name || 'Wariant', 
+      name: currentTemplate?.name || "Wariant",
       is_recommended: false,
       width_cm: parseFloat(width),
       height_cm: parseFloat(height),
@@ -375,39 +429,42 @@ export default function Calculator() {
       total_price_gross: finalTotalGross,
       components,
       calculation_snapshot: {
-          width,
-          height,
-          quantity,
-          customerType,
-          selectedOptions,
-          overlapOverride,
-          adjustments,
-          result,
-          finalTotalNet,
-          finalTotalGross,
-          finalMarginPercentage
-      }
-    }
-    
+        width,
+        height,
+        quantity,
+        customerType,
+        selectedOptions,
+        overlapOverride,
+        adjustments,
+        result,
+        finalTotalNet,
+        finalTotalGross,
+        finalMarginPercentage,
+      },
+    };
+
     try {
-      setLoading(true)
-      const token = localStorage.getItem('access_token')
+      setLoading(true);
+      const token = localStorage.getItem("access_token");
       await axios.post(`${API_URL}/offers/${activeOfferId}/variants`, payload, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
-      router.push(`/admin/offers/${activeOfferId}`) // Redirect back to offer
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      router.push(`/admin/offers/${activeOfferId}`); // Redirect back to offer
     } catch (err: any) {
-      console.error(err)
-      setError(err.response?.data?.detail || 'Nie udało się dodać kalkulacji do oferty.')
+      console.error(err);
+      setError(
+        err.response?.data?.detail ||
+          "Nie udało się dodać kalkulacji do oferty.",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header 
+      <Header
         actions={
           <div className="flex items-center gap-3">
             {activeOfferId && (
@@ -422,16 +479,16 @@ export default function Calculator() {
 
             <button
               onClick={() => {
-                if (!result) return
+                if (!result) return;
                 if (activeOfferId) {
-                  handleAddVariantToOffer()
-                  return
+                  handleAddVariantToOffer();
+                  return;
                 }
 
-                const editingOfferId = sessionStorage.getItem('editingOfferId')
+                const editingOfferId = sessionStorage.getItem("editingOfferId");
                 const offerData = {
                   templateId,
-                  templateName: currentTemplate?.name || '',
+                  templateName: currentTemplate?.name || "",
                   width,
                   height,
                   quantity,
@@ -443,33 +500,47 @@ export default function Calculator() {
                   finalTotalNet,
                   finalTotalGross,
                   finalMarginPercentage,
-                  editingOfferId: sessionStorage.getItem('editingOfferId'),
-                  editingVariantId: sessionStorage.getItem('editingVariantId')
-                }
-                sessionStorage.setItem('offerCalculation', JSON.stringify(offerData))
-                
+                  editingOfferId: sessionStorage.getItem("editingOfferId"),
+                  editingVariantId: sessionStorage.getItem("editingVariantId"),
+                };
+                sessionStorage.setItem(
+                  "offerCalculation",
+                  JSON.stringify(offerData),
+                );
+
                 if (offerData.editingOfferId) {
-                  sessionStorage.removeItem('editingOfferId')
-                  sessionStorage.removeItem('editingVariantId')
-                  router.push(`/admin/offers/${offerData.editingOfferId}/edit`)
+                  sessionStorage.removeItem("editingOfferId");
+                  sessionStorage.removeItem("editingVariantId");
+                  router.push(`/admin/offers/${offerData.editingOfferId}/edit`);
                 } else {
-                  router.push('/admin/offers/new')
+                  router.push("/admin/offers/new");
                 }
               }}
               disabled={!result || loading}
-              className={`${isEditingOffer
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-                } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
+              className={`${
+                isEditingOffer
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              } text-white px-5 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium inline-flex items-center gap-2 transition-colors`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
               </svg>
-              {activeOfferId 
-                ? `Dodaj do oferty #${activeOfferId}` 
-                : (isEditingOffer
-                    ? 'Zaktualizuj ofertę'
-                    : 'Stwórz ofertę')}
+              {activeOfferId
+                ? `Dodaj do oferty #${activeOfferId}`
+                : isEditingOffer
+                  ? "Zaktualizuj ofertę"
+                  : "Stwórz ofertę"}
             </button>
 
             <button
@@ -477,7 +548,7 @@ export default function Calculator() {
               disabled={loading || !canCalculate}
               className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Obliczanie...' : 'Przelicz'}
+              {loading ? "Obliczanie..." : "Przelicz"}
             </button>
           </div>
         }
@@ -485,42 +556,57 @@ export default function Calculator() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
           {/* Left Panel - Inputs */}
           <div className="lg:col-span-4 space-y-6">
-
             {/* Ustawienia Wyceny */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                <svg
+                  className="w-5 h-5 text-indigo-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
                 </svg>
                 Ustawienia wyceny
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Typ klienta</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Typ klienta
+                  </label>
                   <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button
-                      onClick={() => setCustomerType('B2C')}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${customerType === 'B2C'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                      onClick={() => setCustomerType("B2C")}
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        customerType === "B2C"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
                       B2C (Ceny Brutto)
                     </button>
                     <button
-                      onClick={() => setCustomerType('B2B')}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${customerType === 'B2B'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                      onClick={() => setCustomerType("B2B")}
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        customerType === "B2B"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
                       B2B (Ceny Netto)
                     </button>
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500">Określa, czy w podsumowaniu wyceny dominować będą kwoty brutto czy netto.</p>
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Określa, czy w podsumowaniu wyceny dominować będą kwoty
+                    brutto czy netto.
+                  </p>
                 </div>
               </div>
             </div>
@@ -528,8 +614,18 @@ export default function Calculator() {
             {/* Product & Dimensions Card */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                <svg
+                  className="w-5 h-5 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
                 </svg>
                 Produkt i wymiary
               </h2>
@@ -542,7 +638,7 @@ export default function Calculator() {
                   <select
                     value={templateId}
                     onChange={(e) => setTemplateId(e.target.value)}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? 'text-gray-400' : ''}`}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white ${!templateId ? "text-gray-400" : ""}`}
                   >
                     <option value="">Wybierz produkt...</option>
                     {templates.map((t) => (
@@ -597,22 +693,27 @@ export default function Calculator() {
                 </div>
 
                 {/* Sale price per m² */}
-                {currentTemplate && (
-                  currentTemplate.sale_price_per_m2 != null ? (
+                {currentTemplate &&
+                  (currentTemplate.sale_price_per_m2 != null ? (
                     <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                      <span className="text-sm font-medium text-emerald-800">Cena sprzedaży</span>
+                      <span className="text-sm font-medium text-emerald-800">
+                        Cena sprzedaży
+                      </span>
                       <span className="text-sm font-bold text-emerald-800">
-                        {formatCurrency(Number(currentTemplate.sale_price_per_m2))} / m² netto
+                        {formatCurrency(
+                          Number(currentTemplate.sale_price_per_m2),
+                        )}{" "}
+                        / m² netto
                       </span>
                     </div>
                   ) : (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <p className="text-xs text-amber-800">
-                        Cena sprzedaży za 1 m² nie została ustalona — cena liczona z narzutów składników.
+                        Cena sprzedaży za 1 m² nie została ustalona — cena
+                        liczona z narzutów składników.
                       </p>
                     </div>
-                  )
-                )}
+                  ))}
 
                 {/* Template Components Summary */}
                 {currentTemplate && (
@@ -624,11 +725,26 @@ export default function Calculator() {
                       </p>
                       <div className="space-y-1">
                         {requiredComponents.map((comp) => (
-                          <div key={comp.id} className="flex items-center gap-2 text-sm text-gray-700">
-                            <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          <div
+                            key={comp.id}
+                            className="flex items-center gap-2 text-sm text-gray-700"
+                          >
+                            <svg
+                              className="w-4 h-4 text-green-500 flex-shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
-                            <span className="text-xs text-gray-400">{comp.type === 'MATERIAL' ? 'Materiał' : 'Proces'}</span>
+                            <span className="text-xs text-gray-400">
+                              {comp.type === "MATERIAL" ? "Materiał" : "Proces"}
+                            </span>
                             <span className="text-gray-400">•</span>
                             {comp.name}
                           </div>
@@ -644,7 +760,10 @@ export default function Calculator() {
                         </p>
                         <div className="space-y-2">
                           {optionalComponents.map((comp) => (
-                            <label key={comp.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <label
+                              key={comp.id}
+                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                            >
                               <input
                                 type="checkbox"
                                 checked={selectedOptions.includes(comp.id)}
@@ -652,8 +771,14 @@ export default function Calculator() {
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
                               <div className="flex-1 flex items-center gap-2">
-                                <span className="text-sm text-gray-700">{comp.name}</span>
-                                <span className="text-xs text-gray-400">{comp.type === 'MATERIAL' ? 'Materiał' : 'Proces'}</span>
+                                <span className="text-sm text-gray-700">
+                                  {comp.name}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  {comp.type === "MATERIAL"
+                                    ? "Materiał"
+                                    : "Proces"}
+                                </span>
                               </div>
                             </label>
                           ))}
@@ -667,20 +792,51 @@ export default function Calculator() {
 
             {/* Advanced Options & Adjustments */}
             <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
-
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className="w-5 h-5 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     Korekty wyceny
                   </div>
                   <button
-                    onClick={() => setAdjustments([...adjustments, { id: Date.now().toString(), desc: 'Rabat dla stałego klienta', type: 'percentage', value: '-10' }])}
+                    onClick={() =>
+                      setAdjustments([
+                        ...adjustments,
+                        {
+                          id: Date.now().toString(),
+                          desc: "Rabat dla stałego klienta",
+                          type: "percentage",
+                          value: "-10",
+                        },
+                      ])
+                    }
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
                     Dodaj
                   </button>
                 </h2>
@@ -689,26 +845,32 @@ export default function Calculator() {
                   {adjustments.map((adj, index) => (
                     <div key={adj.id} className="flex gap-2 items-start">
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Opis</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Opis
+                        </label>
                         <input
                           type="text"
                           value={adj.desc}
                           onChange={(e) => {
-                            const newAdjs = [...adjustments]
-                            newAdjs[index].desc = e.target.value
-                            setAdjustments(newAdjs)
+                            const newAdjs = [...adjustments];
+                            newAdjs[index].desc = e.target.value;
+                            setAdjustments(newAdjs);
                           }}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div className="w-24">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Typ</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Typ
+                        </label>
                         <select
                           value={adj.type}
                           onChange={(e) => {
-                            const newAdjs = [...adjustments]
-                            newAdjs[index].type = e.target.value as 'amount' | 'percentage'
-                            setAdjustments(newAdjs)
+                            const newAdjs = [...adjustments];
+                            newAdjs[index].type = e.target.value as
+                              | "amount"
+                              | "percentage";
+                            setAdjustments(newAdjs);
                           }}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                         >
@@ -717,14 +879,16 @@ export default function Calculator() {
                         </select>
                       </div>
                       <div className="w-24">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Wartość</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Wartość
+                        </label>
                         <input
                           type="number"
                           value={adj.value}
                           onChange={(e) => {
-                            const newAdjs = [...adjustments]
-                            newAdjs[index].value = e.target.value
-                            setAdjustments(newAdjs)
+                            const newAdjs = [...adjustments];
+                            newAdjs[index].value = e.target.value;
+                            setAdjustments(newAdjs);
                           }}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                           step="0.01"
@@ -732,19 +896,40 @@ export default function Calculator() {
                       </div>
                       <div className="pt-5">
                         <button
-                          onClick={() => setAdjustments(adjustments.filter(a => a.id !== adj.id))}
+                          onClick={() =>
+                            setAdjustments(
+                              adjustments.filter((a) => a.id !== adj.id),
+                            )
+                          }
                           className="text-gray-400 hover:text-red-500 p-2 transition-colors"
                           title="Usuń"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
                         </button>
                       </div>
                     </div>
                   ))}
                   {adjustments.length === 0 && (
-                    <p className="text-sm text-gray-400 italic text-center py-2">Brak dodanych korekt wyceny.</p>
+                    <p className="text-sm text-gray-400 italic text-center py-2">
+                      Brak dodanych korekt wyceny.
+                    </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-2">Wart. ujemna = Rabat. Procent jest liczony od sumy wartości składowych netto.</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Wart. ujemna = Rabat. Procent jest liczony od sumy wartości
+                    składowych netto.
+                  </p>
                 </div>
               </div>
 
@@ -752,8 +937,18 @@ export default function Calculator() {
 
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <svg
+                    className="w-5 h-5 text-orange-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
                   </svg>
                   Opcje zaawansowane
                 </h2>
@@ -779,8 +974,18 @@ export default function Calculator() {
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <span className="font-medium">{error}</span>
                 </div>
@@ -796,79 +1001,119 @@ export default function Calculator() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
                     <p className="text-blue-100 text-sm font-medium mb-1">
-                      {customerType === 'B2C' ? 'Cena brutto' : 'Cena netto'}
+                      {customerType === "B2C" ? "Cena brutto" : "Cena netto"}
                     </p>
                     <p className="text-3xl font-bold">
-                      {formatCurrency(customerType === 'B2C' ? finalTotalGross : finalTotalNet)}
+                      {formatCurrency(
+                        customerType === "B2C"
+                          ? finalTotalGross
+                          : finalTotalNet,
+                      )}
                     </p>
                     <div className="mt-2 pt-2 border-t border-white/10 text-blue-100 space-y-1">
                       <p className="text-xs font-medium">
-                        {customerType === 'B2C'
+                        {customerType === "B2C"
                           ? `Netto: ${formatCurrency(finalTotalNet)} (Vat 23%)`
                           : `Brutto: ${formatCurrency(finalTotalGross)} (Vat 23%)`}
                       </p>
                       <p className="text-xs font-bold">
-                        {formatCurrency((customerType === 'B2C' ? finalTotalGross : finalTotalNet) / (parseInt(quantity) || 1))} za 1 szt.
+                        {formatCurrency(
+                          (customerType === "B2C"
+                            ? finalTotalGross
+                            : finalTotalNet) / (parseInt(quantity) || 1),
+                        )}{" "}
+                        za 1 szt.
                       </p>
                     </div>
                   </div>
 
                   <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-                    <p className="text-green-100 text-sm font-medium mb-1">Marża</p>
-                    <p className="text-3xl font-bold">{finalMarginPercentage.toFixed(1)}%</p>
+                    <p className="text-green-100 text-sm font-medium mb-1">
+                      Marża
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {finalMarginPercentage.toFixed(1)}%
+                    </p>
                     <p className="text-green-100 text-xs mt-2">
                       {formatCurrency(absoluteMargin)} zysk netto
                     </p>
                   </div>
 
                   <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                    <p className="text-purple-100 text-sm font-medium mb-1">Koszt wytworzenia netto</p>
-                    <p className="text-3xl font-bold">{formatCurrency(result.total_cost_cogs)}</p>
+                    <p className="text-purple-100 text-sm font-medium mb-1">
+                      Koszt wytworzenia netto
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {formatCurrency(result.total_cost_cogs)}
+                    </p>
                   </div>
                 </div>
 
                 {/* Production Details — Accordion */}
                 <div className="bg-white rounded-xl shadow-sm border">
                   <button
-                    onClick={() => setProductionDetailsOpen(!productionDetailsOpen)}
+                    onClick={() =>
+                      setProductionDetailsOpen(!productionDetailsOpen)
+                    }
                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-xl"
                   >
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="w-5 h-5 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                       Szczegóły produkcyjne
                     </h3>
                     <span className="text-sm text-blue-600 font-medium">
-                      {productionDetailsOpen ? 'zwiń' : 'rozwiń'}
+                      {productionDetailsOpen ? "zwiń" : "rozwiń"}
                     </span>
                   </button>
 
                   {productionDetailsOpen && (
                     <div className="px-6 pb-5 grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar netto</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Wymiar netto
+                        </p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {parseFloat(width).toFixed(1)} × {parseFloat(height).toFixed(1)} cm
+                          {parseFloat(width).toFixed(1)} ×{" "}
+                          {parseFloat(height).toFixed(1)} cm
                         </p>
                       </div>
 
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Wymiar brutto</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Wymiar brutto
+                        </p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {result.gross_dimensions.width.toFixed(1)} × {result.gross_dimensions.height.toFixed(1)} cm
+                          {result.gross_dimensions.width.toFixed(1)} ×{" "}
+                          {result.gross_dimensions.height.toFixed(1)} cm
                         </p>
                       </div>
 
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Bryty</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Bryty
+                        </p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {result.num_panels} {result.is_split ? '(dzielone)' : '(jeden kawałek)'}
+                          {result.num_panels}{" "}
+                          {result.is_split ? "(dzielone)" : "(jeden kawałek)"}
                         </p>
                       </div>
 
                       <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Zakładka</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Zakładka
+                        </p>
                         <p className="text-sm font-semibold text-gray-900">
                           {result.overlap_used_cm.toFixed(1)} cm
                         </p>
@@ -884,37 +1129,68 @@ export default function Calculator() {
                     className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gray-50 border-b"
                   >
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-5 h-5 text-orange-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       Składniki wyceny (widok techniczny)
                     </h3>
                     <span className="text-sm text-blue-600 font-medium">
-                      {techDetailsOpen ? 'zwiń' : 'rozwiń'}
+                      {techDetailsOpen ? "zwiń" : "rozwiń"}
                     </span>
                   </button>
 
                   {techDetailsOpen && (
                     <div className="divide-y divide-gray-100">
                       {result.tech_view.map((component, index) => (
-                        <div key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div
+                          key={index}
+                          className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-1">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${component.type === 'MATERIAL'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : 'bg-orange-100 text-orange-800'
-                                  }`}>
-                                  {component.type === 'MATERIAL' ? 'MATERIAŁ' : 'PROCES'}
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    component.type === "MATERIAL"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-orange-100 text-orange-800"
+                                  }`}
+                                >
+                                  {component.type === "MATERIAL"
+                                    ? "MATERIAŁ"
+                                    : "PROCES"}
                                 </span>
-                                <h4 className="font-medium text-gray-900">{component.name}</h4>
+                                <h4 className="font-medium text-gray-900">
+                                  {component.name}
+                                </h4>
                               </div>
-                              <p className="text-sm text-gray-500">{component.details}</p>
+                              <p className="text-sm text-gray-500">
+                                {component.details}
+                              </p>
                             </div>
                             <div className="text-right ml-4">
                               <p className="font-semibold text-gray-900">
-                                {formatCurrency(customerType === 'B2C' ? component.price_net * VAT_RATE : component.price_net)}
+                                {formatCurrency(
+                                  customerType === "B2C"
+                                    ? component.price_net * VAT_RATE
+                                    : component.price_net,
+                                )}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {component.qty.toFixed(3)} {component.unit}
@@ -926,48 +1202,86 @@ export default function Calculator() {
 
                       {/* Adjustment Rows */}
                       {adjustments.map((adj) => {
-                        const val = parseFloat(adj.value.replace(',', '.'))
-                        if (isNaN(val) || val === 0) return null
+                        const val = parseFloat(adj.value.replace(",", "."));
+                        if (isNaN(val) || val === 0) return null;
 
-                        const amountNet = adj.type === 'amount' ? val : baseTotalNet * (val / 100)
+                        const amountNet =
+                          adj.type === "amount"
+                            ? val
+                            : baseTotalNet * (val / 100);
 
                         return (
-                          <div key={adj.id} className="px-6 py-4 bg-gray-50 transition-colors border-t border-dashed">
+                          <div
+                            key={adj.id}
+                            className="px-6 py-4 bg-gray-50 transition-colors border-t border-dashed"
+                          >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-1">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${amountNet < 0
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-green-100 text-green-800'
-                                    }`}>
-                                    {amountNet < 0 ? 'RABAT' : 'DOPŁATA'}
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      amountNet < 0
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-green-100 text-green-800"
+                                    }`}
+                                  >
+                                    {amountNet < 0 ? "RABAT" : "DOPŁATA"}
                                   </span>
-                                  <h4 className="font-medium text-gray-900">{adj.desc || 'Korekta wyceny'}</h4>
+                                  <h4 className="font-medium text-gray-900">
+                                    {adj.desc || "Korekta wyceny"}
+                                  </h4>
                                 </div>
                                 <p className="text-sm text-gray-500">
-                                  {adj.type === 'percentage' ? `Kalkulowano jako ${val}% od sumy składowych netto.` : 'Korekta kwotowa netto.'}
+                                  {adj.type === "percentage"
+                                    ? `Kalkulowano jako ${val}% od sumy składowych netto.`
+                                    : "Korekta kwotowa netto."}
                                 </p>
                               </div>
                               <div className="text-right ml-4">
-                                <p className={`font-semibold ${amountNet < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                                  {formatCurrency(customerType === 'B2C' ? amountNet * VAT_RATE : amountNet)}
+                                <p
+                                  className={`font-semibold ${amountNet < 0 ? "text-red-700" : "text-green-700"}`}
+                                >
+                                  {formatCurrency(
+                                    customerType === "B2C"
+                                      ? amountNet * VAT_RATE
+                                      : amountNet,
+                                  )}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                  {adj.type === 'percentage' ? `${val}%` : 'Kwota stała'}
+                                  {adj.type === "percentage"
+                                    ? `${val}%`
+                                    : "Kwota stała"}
                                 </p>
                               </div>
                             </div>
                           </div>
-                        )
+                        );
                       })}
 
                       {/* Minimum Order Value Warning */}
                       {currentTotal > 0 && currentTotal < MIN_ORDER_VALUE && (
                         <div className="px-6 py-4 bg-white border-t">
                           <div className="p-3 bg-red-50 rounded-lg flex items-start gap-2 border border-red-100">
-                            <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <svg
+                              className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                              />
+                            </svg>
                             <p className="text-sm text-red-800">
-                              Uwaga! Poinformuj klienta, że minimalna wartość zamówienia to <span className="font-bold">{MIN_ORDER_VALUE} zł</span>.
+                              Uwaga! Poinformuj klienta, że minimalna wartość
+                              zamówienia to{" "}
+                              <span className="font-bold">
+                                {MIN_ORDER_VALUE} zł
+                              </span>
+                              .
                             </p>
                           </div>
                         </div>
@@ -979,17 +1293,31 @@ export default function Calculator() {
             ) : (
               <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <svg
+                    className="w-8 h-8 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Wprowadź parametry</h3>
-                <p className="text-gray-500">Podaj wymiary i wybierz produkt, aby zobaczyć kalkulację</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Wprowadź parametry
+                </h3>
+                <p className="text-gray-500">
+                  Podaj wymiary i wybierz produkt, aby zobaczyć kalkulację
+                </p>
               </div>
             )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Next.js Middleware to proxy /api/* requests to the backend.
@@ -12,23 +12,23 @@ import { NextRequest, NextResponse } from 'next/server'
  *   from the container's environment, not the build-time value
  */
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
   // Only proxy /api/* requests
-  if (pathname.startsWith('/api/')) {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
-    const url = new URL(pathname + request.nextUrl.search, backendUrl)
+  if (pathname.startsWith("/api/")) {
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+    const url = new URL(pathname + request.nextUrl.search, backendUrl);
 
     return NextResponse.rewrite(url, {
       request: {
         headers: request.headers,
       },
-    })
+    });
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: '/api/:path*',
-}
+  matcher: "/api/:path*",
+};
