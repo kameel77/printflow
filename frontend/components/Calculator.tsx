@@ -827,7 +827,7 @@ export default function Calculator() {
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    Niestandardowy (Ad-hoc)
+                    Indywidualny
                   </button>
                 </div>
 
@@ -888,58 +888,6 @@ export default function Calculator() {
                         placeholder="Np. Baner reklamowy"
                       />
                     </div>
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
-                      <h3 className="text-sm font-medium text-gray-800">Składniki wyceny</h3>
-                      {adHocComponents.map((comp, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <select
-                            value={`${comp.type}:${comp.id}`}
-                            onChange={(e) => {
-                              const [type, id] = e.target.value.split(":");
-                              const list = type === "MATERIAL" ? materials : processes;
-                              const item = list.find(l => String(l.id) === id);
-                              if (item) {
-                                const newComps = [...adHocComponents];
-                                newComps[idx] = { type, id, name: item.name };
-                                setAdHocComponents(newComps);
-                              }
-                            }}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
-                          >
-                            <optgroup label="Materiały">
-                              {materials.map(m => (
-                                <option key={`MATERIAL:${m.id}`} value={`MATERIAL:${m.id}`}>{m.name}</option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Procesy">
-                              {processes.map(p => (
-                                <option key={`PROCESS:${p.id}`} value={`PROCESS:${p.id}`}>{p.name}</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                          <button
-                            onClick={() => {
-                              const newComps = [...adHocComponents];
-                              newComps.splice(idx, 1);
-                              setAdHocComponents(newComps);
-                            }}
-                            className="text-red-500 hover:text-red-700 p-2"
-                          >
-                            Usuń
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          if (materials.length > 0) {
-                            setAdHocComponents([...adHocComponents, { type: "MATERIAL", id: String(materials[0].id), name: materials[0].name }]);
-                          }
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2"
-                      >
-                        + Dodaj materiał / proces
-                      </button>
-                    </div>
                   </div>
                 )}
 
@@ -985,6 +933,117 @@ export default function Calculator() {
                     />
                   </div>
                 </div>
+
+                {productMode === "ADHOC" && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                      <h3 className="text-sm font-medium text-gray-800">Składniki wyceny</h3>
+                      {adHocComponents.map((comp, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            value={`${comp.type}:${comp.id}`}
+                            onChange={(e) => {
+                              const [type, id] = e.target.value.split(":");
+                              const list = type === "MATERIAL" ? materials : processes;
+                              const item = list.find(l => String(l.id) === id);
+                              if (item) {
+                                const newComps = [...adHocComponents];
+                                newComps[idx] = { type, id, name: item.name };
+                                setAdHocComponents(newComps);
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                          >
+                            <optgroup label="Materiały">
+                              {materials.map(m => (
+                                <option key={`MATERIAL:${m.id}`} value={`MATERIAL:${m.id}`}>{m.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Procesy">
+                              {processes.map(p => (
+                                <option key={`PROCESS:${p.id}`} value={`PROCESS:${p.id}`}>{p.name}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                          <button
+                            onClick={() => {
+                              const newComps = [...adHocComponents];
+                              newComps.splice(idx, 1);
+                              setAdHocComponents(newComps);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-2"
+                            title="Usuń"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          if (materials.length > 0) {
+                            setAdHocComponents([...adHocComponents, { type: "MATERIAL", id: String(materials[0].id), name: materials[0].name }]);
+                          }
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        Dodaj materiał / proces
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                      <h3 className="text-sm font-medium text-gray-800">Praca ludzka (Robocizna)</h3>
+                      {adHocLabor.map((labor, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                           <input 
+                              type="number"
+                              value={labor.minutes}
+                              onChange={(e) => {
+                                const newLabor = [...adHocLabor];
+                                newLabor[idx].minutes = e.target.value;
+                                setAdHocLabor(newLabor);
+                              }}
+                              className="w-24 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                              placeholder="Minuty"
+                              min="0"
+                           />
+                           <select
+                              value={labor.difficulty}
+                              onChange={(e) => {
+                                const newLabor = [...adHocLabor];
+                                newLabor[idx].difficulty = e.target.value;
+                                setAdHocLabor(newLabor);
+                              }}
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                           >
+                              <option value="NORMAL">Standardowa</option>
+                              <option value="HARD">Wymagająca</option>
+                           </select>
+                           <button
+                             onClick={() => {
+                               const newLabor = [...adHocLabor];
+                               newLabor.splice(idx, 1);
+                               setAdHocLabor(newLabor);
+                             }}
+                             className="text-red-500 hover:text-red-700 p-2"
+                             title="Usuń"
+                           >
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                           </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setAdHocLabor([...adHocLabor, { minutes: "60", difficulty: "NORMAL" }]);
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        Dodaj pracę ludzką
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Sale price per m² */}
                 {currentTemplate &&
