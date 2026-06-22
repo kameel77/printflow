@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+let API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+if (typeof window !== "undefined" && window.location.protocol === "https:" && API_URL.startsWith("http://")) {
+  API_URL = API_URL.replace("http://", "https://");
+}
 
 interface OfferVariantComponent {
   id: number;

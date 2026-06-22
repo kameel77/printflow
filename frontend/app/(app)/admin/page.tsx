@@ -8,7 +8,11 @@ import { Tooltip, LabelWithTooltip } from "@/components/Tooltip";
 import { useAuth } from "@/components/AuthProvider";
 import Header from "@/components/Header";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+let API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+if (typeof window !== "undefined" && window.location.protocol === "https:" && API_URL.startsWith("http://")) {
+  API_URL = API_URL.replace("http://", "https://");
+}
 
 // ── Cache-busting: prevent Cloudflare/browser from serving stale API data ──
 axios.interceptors.request.use((config) => {

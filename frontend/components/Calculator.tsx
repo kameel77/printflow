@@ -77,7 +77,11 @@ interface Process {
   name: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+let API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+if (typeof window !== "undefined" && window.location.protocol === "https:" && API_URL.startsWith("http://")) {
+  API_URL = API_URL.replace("http://", "https://");
+}
 
 export default function Calculator() {
   const { user, logout } = useAuth();
@@ -966,7 +970,7 @@ export default function Calculator() {
                                 setAdHocComponents(newComps);
                               }
                             }}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                            className="flex-1 w-full min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-md"
                           >
                             <optgroup label="Materiały">
                               {materials.map(m => (

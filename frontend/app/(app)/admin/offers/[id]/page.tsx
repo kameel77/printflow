@@ -8,7 +8,11 @@ import { useAuth } from "@/components/AuthProvider";
 import Header from "@/components/Header";
 import SendOfferModal from "@/components/SendOfferModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+let API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+if (typeof window !== "undefined" && window.location.protocol === "https:" && API_URL.startsWith("http://")) {
+  API_URL = API_URL.replace("http://", "https://");
+}
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
