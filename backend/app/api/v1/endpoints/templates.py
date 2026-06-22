@@ -62,9 +62,19 @@ async def create_template(
             TemplateLaborEntry(minutes=entry.minutes, difficulty=entry.difficulty, sort_order=i)
         )
     db.add(db_template)
-    await db.flush()
-    await db.refresh(db_template, ["components", "labor_entries"])
-    return db_template
+    await db.commit()
+
+    # Fetch the template with all relationships loaded for the response
+    result = await db.execute(
+        select(ProductTemplate)
+        .options(
+            selectinload(ProductTemplate.category),
+            selectinload(ProductTemplate.components),
+            selectinload(ProductTemplate.labor_entries),
+        )
+        .where(ProductTemplate.id == db_template.id)
+    )
+    return result.scalar_one()
 
 
 @router.get("/{template_id}", response_model=ProductTemplateResponse)
