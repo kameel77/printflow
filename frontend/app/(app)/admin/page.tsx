@@ -265,7 +265,7 @@ export default function AdminPage() {
         })
       };
 
-      const res = await axios.post(`${API_URL}/templates/`, duplicatedData);
+      const res = await axios.post(`${API_URL}/templates`, duplicatedData);
       setTemplates((prev) => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name, "pl")));
     } catch (err: any) {
       alert(err.response?.data?.detail || "Błąd podczas duplikowania szablonu");
