@@ -240,6 +240,7 @@ class ProductTemplateCreate(ProductTemplateBase):
 
 
 class ProductTemplateUpdate(BaseModel):
+    category_id: Optional[int] = None
     name: Optional[str] = None
     description: Optional[str] = None
     default_margin_w_cm: Optional[Decimal] = None
