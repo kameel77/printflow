@@ -584,10 +584,12 @@ export default function Calculator() {
       router.push(`/admin/offers/${activeOfferId}`); // Redirect back to offer
     } catch (err: any) {
       console.error(err);
-      setError(
-        err.response?.data?.detail ||
-          "Nie udało się dodać kalkulacji do oferty.",
-      );
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string' 
+        ? detail 
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ") 
+        : "Nie udało się dodać kalkulacji do oferty.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -629,7 +631,12 @@ export default function Calculator() {
       setProductMode("CATALOG");
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.detail || "Nie udało się zapisać produktu w katalogu.");
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string' 
+        ? detail 
+        : Array.isArray(detail) ? detail.map((d: any) => d.msg || JSON.stringify(d)).join(", ") 
+        : "Nie udało się zapisać produktu w katalogu.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -1023,7 +1030,7 @@ export default function Calculator() {
                               }}
                               className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
                            >
-                              <option value="NORMAL">Standardowa</option>
+                              <option value="MEDIUM">Standardowa</option>
                               <option value="HARD">Wymagająca</option>
                            </select>
                            <button
@@ -1069,7 +1076,7 @@ export default function Calculator() {
                   ) : (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <p className="text-xs text-amber-800">
-                        Cena sprzedaży za 1 m² nie została ustalona — cena
+                        Cena sprzedaży za 1 m² nie została ustalona - cena
                         liczona z narzutów składników.
                       </p>
                     </div>

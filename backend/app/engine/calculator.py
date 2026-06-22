@@ -550,7 +550,7 @@ class PrintFlowEngine:
                 label = difficulty_labels.get(difficulty, difficulty)
                 self.log(f"Robocizna ({label}): {minutes_val}min × {rate_per_min:.4f} PLN/min = {entry_cost:.2f} PLN")
                 tech_view.append(ComponentResult(
-                    name=f"Robocizna — {label}",
+                    name=f"Robocizna - {label}",
                     type="LABOR",
                     qty=float(minutes_val),
                     unit="min",
