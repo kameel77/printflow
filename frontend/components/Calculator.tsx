@@ -170,7 +170,7 @@ export default function Calculator() {
         if (d.customConfig.labor_entries) {
           setAdHocLabor(d.customConfig.labor_entries.map((l: any) => ({
             minutes: String(l.minutes),
-            difficulty: l.difficulty
+            difficulty: l.difficulty === "NORMAL" ? "MEDIUM" : l.difficulty
           })));
         }
       } else {
@@ -1048,7 +1048,7 @@ export default function Calculator() {
                       ))}
                       <button
                         onClick={() => {
-                          setAdHocLabor([...adHocLabor, { minutes: "60", difficulty: "NORMAL" }]);
+                          setAdHocLabor([...adHocLabor, { minutes: "60", difficulty: "MEDIUM" }]);
                         }}
                         className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-flex items-center gap-1"
                       >
